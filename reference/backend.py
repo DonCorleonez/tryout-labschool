@@ -187,15 +187,26 @@ class App:
         s = self._session(c, "child"); st = sc.clock_state(c["now"]); out = {"clock": st.kind, "window": st.window.k if st.window else None, "tryouts": [], "drills": []}
         if st.kind == "tryout":
             ids = sc.tryout_ids(s["join_window"], st.window.k, "utama" if s["plan"] != "free" else "free")
-            out["tryouts"] = [{"id": t, "state": "selesai" if t in self._done_ids(s["family_id"], st.window.k) else ("siap" if self._access(s, t, c["now"])[0] == "" else "terkunci")} for t in ids]
+            out["tryouts"] = [{"id": t, "state": self._tryout_state(s, t, st.window.k, c["now"])} for t in ids]
             out["closes_at"] = iso(st.closes_at)
         elif st.kind in ("drill", "taper"):
             out["drills"] = self._drill_rows(s["family_id"], st.window.k)
             out["pending"] = bool(self.db.execute("SELECT 1 FROM attempts WHERE family_id=? AND window_k=? AND analysis_state='menunggu'", (s["family_id"], st.window.k)).fetchone())
         return out
 
+    def _tryout_state(self, s, tid, k, now):
+        if tid in self._done_ids(s["family_id"], k): return "selesai"
+        a = self.db.execute("SELECT deadline_at FROM attempts WHERE family_id=? AND tryout_id=? AND submitted_at IS NULL", (s["family_id"], tid)).fetchone()
+        if a: return "berjalan" if now <= datetime.fromisoformat(a["deadline_at"]) else "terlewat"
+        return "siap" if self._access(s, tid, now)[0] == "" else "terkunci"
+
     def start(self, c):
         s = self._session(c, "child"); tid = c["args"]["tid"]
+        a = self.db.execute("SELECT * FROM attempts WHERE family_id=? AND tryout_id=? AND submitted_at IS NULL", (s["family_id"], tid)).fetchone()
+        if a and c["now"] <= datetime.fromisoformat(a["deadline_at"]):        # lanjutkan (refresh/putus): soal & tenggat SAMA, tidak membuat attempt baru
+            qs = {q["id"]: q for q in bank.get_questions(_seed(s["family_id"], tid))}
+            return {"attempt": a["public_ref"], "deadline_at": a["deadline_at"], "resumed": True,
+                    "questions": [bank.public(qs[i]) for i in json.loads(a["question_ids"])]}
         why, k = self._access(s, tid, c["now"])
         if why: raise Err(409, why)
         qs = bank.get_questions(_seed(s["family_id"], tid))
@@ -259,10 +270,17 @@ class App:
             p = per[n]
             self.db.execute("INSERT INTO attempt_answers VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (a["id"], n, x.qid, x.chosen_idx, x.correct_idx, p["raw"], p["idle"], x.seconds, p["visits"], int(x.flagged), p["flag_toggles"], x.changes, int(x.changed_correct_to_wrong), t["tag"]))
         payload = self._payload(s, a, sco, rule, answers, qs)
-        self.db.execute("UPDATE attempts SET submitted_at=?, score_json=?, rule_json=?, analysis_state='menunggu' WHERE id=?", (iso(now), json.dumps({"score": sco}), json.dumps(rule), a["id"]))
+        review = self._review(answers, qs, order)
+        self.db.execute("UPDATE attempts SET submitted_at=?, score_json=?, rule_json=?, analysis_state='menunggu' WHERE id=?", (iso(now), json.dumps({"score": sco, "review": review}), json.dumps(rule), a["id"]))
         self.db.execute("INSERT INTO analysis_jobs(attempt_id,state,input_json,created_at) VALUES(?,?,?,?)", (a["id"], "menunggu", json.dumps(payload), iso(now)))
-        review = [{"no": n, "correct_idx": x.correct_idx, "chosen_idx": x.chosen_idx, "is_correct": x.chosen_idx == x.correct_idx} for n, x in enumerate(answers, 1)]
         return {"score": sco, "review": review, "analisa": "menunggu"}     # kunci baru boleh keluar SETELAH submit
+
+    @staticmethod
+    def _review(answers, qs, order):
+        """Pembahasan pasca-submit (bahan Buku Salah). Hanya dipanggil SETELAH attempt tersimpan sebagai dikumpulkan."""
+        return [{"no": n, "correct_idx": x.correct_idx, "chosen_idx": x.chosen_idx, "is_correct": x.chosen_idx == x.correct_idx,
+                 "explanation": qs[qid].get("explanation", ""), "shortcut": qs[qid].get("shortcut", "")}
+                for n, (x, qid) in enumerate(zip(answers, order), 1)]
 
     def _payload(self, s, a, sco, rule, answers, qs):
         """Payload anonim ke AI: pseudonim keluarga, tanpa nama/nomor/email."""

@@ -97,7 +97,11 @@ def test_start_hides_answers_and_blocks_second_start(app):
     s = run_tryout(app, ct, "TO2-1", "2026-11-14T10:00")
     assert all(set(q) == {"no", "id", "subject", "topic", "level", "q", "opts"} for q in s["questions"])
     assert "ans" not in json.dumps(s) and "exp" not in json.dumps(s)
-    st, e = call(app, "POST", "/api/child/tryouts/TO2-1/start", token=ct, t="2026-11-14T10:05")
+    st, s2 = call(app, "POST", "/api/child/tryouts/TO2-1/start", token=ct, t="2026-11-14T10:05")   # start ulang = lanjut, BUKAN attempt baru
+    assert st == 200 and s2["resumed"] and s2["attempt"] == s["attempt"]
+    assert app.db.execute("SELECT COUNT(*) FROM attempts WHERE tryout_id='TO2-1'").fetchone()[0] == 1
+    call(app, "POST", f"/api/child/attempts/{s['attempt']}/submit", {"answers": {}}, token=ct, t="2026-11-14T10:10")
+    st, e = call(app, "POST", "/api/child/tryouts/TO2-1/start", token=ct, t="2026-11-14T10:15")
     assert st == 409 and e["error"] == "sudah_dikerjakan"
 
 
@@ -267,3 +271,31 @@ def test_bank_public_view_has_no_key():
     qs = bank.get_questions(7)
     assert len(qs) == 12 and all("ans" not in bank.public(q) for q in qs)
     assert all(len(set(q["opts"])) == 4 and 0 <= q["ans"] < 4 for q in qs)
+
+
+# ---------- P3: lanjut setelah refresh, pembahasan pasca-submit ----------
+def _child(app):
+    st, r = call(app, "POST", "/api/parent/register", {"name": "Ibu", "whatsapp": "081234567890", "email": "r@s.co", "consent": True, "pin": "123456"})
+    return call(app, "POST", "/api/child/login", {"code": r["child_code"]})[1]["token"]
+
+
+def test_start_again_resumes_same_attempt_until_deadline(app):
+    tok = _child(app)
+    st, s1 = call(app, "POST", "/api/child/tryouts/DIAG/start", token=tok, t="2026-11-06T18:00")
+    st, s2 = call(app, "POST", "/api/child/tryouts/DIAG/start", token=tok, t="2026-11-06T19:30")
+    assert st == 200 and s2["resumed"] and s2["attempt"] == s1["attempt"] and s2["deadline_at"] == s1["deadline_at"]
+    assert [q["id"] for q in s2["questions"]] == [q["id"] for q in s1["questions"]] and all("ans" not in q for q in s2["questions"])
+    assert call(app, "GET", "/api/child/home", token=tok, t="2026-11-06T19:30")[1]["tryouts"][0]["state"] == "berjalan"
+    st, e = call(app, "POST", "/api/child/tryouts/DIAG/start", token=tok, t="2026-11-06T20:01")      # lewat 2 jam: tidak bisa dilanjut
+    assert st == 409 and e["error"] == "sudah_dikerjakan"
+    assert call(app, "GET", "/api/child/home", token=tok, t="2026-11-06T20:01")[1]["tryouts"][0]["state"] == "terlewat"
+
+
+def test_review_with_explanation_only_after_submit_and_idempotent(app):
+    tok = _child(app)
+    st, s = call(app, "POST", "/api/child/tryouts/DIAG/start", token=tok, t="2026-11-06T18:00")
+    assert all("explanation" not in q for q in s["questions"])
+    st, r1 = call(app, "POST", f"/api/child/attempts/{s['attempt']}/submit", {"answers": {"1": 0}}, token=tok, t="2026-11-06T18:30")
+    assert st == 200 and len(r1["review"]) == len(s["questions"]) and "explanation" in r1["review"][0]
+    st, r2 = call(app, "POST", f"/api/child/attempts/{s['attempt']}/submit", {"answers": {"1": 1}}, token=tok, t="2026-11-06T18:31")
+    assert r2["idempoten"] and r2["review"] == r1["review"] and r2["score"] == r1["score"]
