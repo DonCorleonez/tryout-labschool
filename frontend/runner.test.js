@@ -1,4 +1,4 @@
-const assert = require('assert'); const Runner = require('./runner.js');
+const assert = require('assert'); const Runner = require('../public/js/runner.js');
 const mem = () => { const m = {}; return { getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = v; }, removeItem: k => { delete m[k]; }, _m: m }; };
 let t = 0; const now = () => t;
 function mkApi(script) { const calls = []; return { calls, async post(path, body) { calls.push({ path, body }); return script(path, calls.length); } }; }
