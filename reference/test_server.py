@@ -90,6 +90,9 @@ def test_production_requires_real_secrets():
     with pytest.raises(sv.ConfigError):
         cfg.validate()
     cfg.webhook_secret, cfg.admin_token = "s" * 32, "a" * 32
+    with pytest.raises(sv.ConfigError):            # bank STUB dilarang di produksi
+        cfg.validate()
+    cfg.bank_dir = "bank"
     cfg.validate()
 
 

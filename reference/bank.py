@@ -13,7 +13,7 @@ _STATIC = [
 ]
 
 
-def get_questions(seed: int) -> list[dict]:
+def _stub_questions(seed: int) -> list[dict]:
     """12 soal deterministik per seed: 5 Matematika (dihitung program) + 7 statis, urutan diacak."""
     r = random.Random(seed)
     qs = []
@@ -33,6 +33,28 @@ def get_questions(seed: int) -> list[dict]:
     return qs
 
 
+_BANK = None          # bankfile.Bank bila BANK_DIR dikonfigurasi; None = STUB
+
+
+def configure(folder):
+    """Muat bank berkas (tervalidasi). Mengembalikan objek Bank agar pemanggil bisa melapor/menolak start."""
+    global _BANK
+    if not folder:
+        _BANK = None; return None
+    from bankfile import Bank
+    _BANK = Bank.load(folder)
+    return _BANK
+
+
+def get_questions(seed: int) -> list[dict]:
+    """Soal deterministik per seed. Bank berkas bila ada, kalau tidak STUB (hanya untuk uji)."""
+    if _BANK is not None and (_BANK.items or _BANK.templates):
+        return _BANK.build_tryout(seed)
+    return _stub_questions(seed)
+
+
 def public(q: dict) -> dict:
     """Bentuk soal yang boleh dikirim ke browser SEBELUM submit: tanpa kunci dan pembahasan."""
-    return {k: q[k] for k in ("no", "id", "subject", "topic", "level", "q", "opts")}
+    out = {k: q[k] for k in ("no", "id", "subject", "topic", "level", "q", "opts")}
+    if q.get("passage"): out["passage"] = q["passage"]
+    return out

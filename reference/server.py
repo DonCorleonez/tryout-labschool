@@ -34,6 +34,7 @@ class Config:
     production_hosts: set = field(default_factory=set)   # host yang dianggap produksi
     public_dir: str = str(Path(__file__).resolve().parent.parent / "public")
     trust_proxy: bool = False                            # True bila di belakang Cloudflare Tunnel/reverse proxy
+    bank_dir: str = ""                                   # folder bank tervalidasi; kosong = bank STUB (dilarang di produksi)
 
     @classmethod
     def from_env(cls, env=None) -> "Config":
@@ -47,6 +48,7 @@ class Config:
         c.public_host = e.get("PUBLIC_HOST", c.public_host).strip().lower()
         c.production_hosts = {h.strip().lower() for h in e.get("PRODUCTION_HOSTS", "").split(",") if h.strip()}
         c.public_dir = e.get("PUBLIC_DIR", c.public_dir)
+        c.bank_dir = e.get("BANK_DIR", c.bank_dir)
         return c
 
     @property
@@ -61,6 +63,8 @@ class Config:
             raise ConfigError("WEBHOOK_SECRET dan ADMIN_TOKEN wajib diisi nilai rahasia di produksi")
         if self.is_production and self.db_path == ":memory:":
             raise ConfigError("DB_PATH :memory: tidak boleh di produksi")
+        if self.is_production and not self.bank_dir:
+            raise ConfigError("BANK_DIR wajib di produksi (bank STUB hanya untuk uji)")
 
 
 SEC_HEADERS = {
@@ -140,6 +144,12 @@ def make_handler(app: App, cfg: Config, lock: threading.Lock):
 
 def build(cfg: Config):
     cfg.validate()
+    import bank
+    b = bank.configure(cfg.bank_dir or None)
+    if b is not None:
+        sys.stderr.write(b.report().splitlines()[0] + "\n")
+        if cfg.is_production and not b.items:
+            raise ConfigError("bank di BANK_DIR tidak berisi butir lolos validasi")
     app = App(db_path=cfg.db_path, webhook_secret=cfg.webhook_secret, admin_token=cfg.admin_token, playtest=cfg.playtest)
     if cfg.db_path != ":memory:":
         app.db.execute("PRAGMA journal_mode=WAL")
