@@ -13,28 +13,32 @@ from collections import Counter
 from pathlib import Path
 
 # ---- taksonomi kanonik (BRIEF §4) ----
-TAXONOMY = {
+TAXONOMY = {   # disesuaikan dengan tabel "Instrumen Tes Seleksi" Pedoman Jalur Tes 2027 (2 Nov 2026)
     "Kuantitatif": {"MAT-PEC": "Pecahan", "MAT-KPK": "KPK dan FPB", "MAT-PBD": "Perbandingan dan Skala", "MAT-PSN": "Persen dan Uang",
-                    "MAT-BIL": "Bilangan Bulat dan Operasi Hitung", "MAT-GEO": "Bangun Datar dan Bangun Ruang", "MAT-SAT": "Satuan dan Konversi",
-                    "MAT-DAT": "Data dan Rata-rata", "MAT-POL": "Pola Bilangan", "MAT-KEC": "Kecepatan, Jarak, Waktu"},
+                    "MAT-BIL": "Bilangan Bulat dan Operasi Hitung", "MAT-GEO": "Geometri: Bangun Datar dan Bangun Ruang", "MAT-SAT": "Satuan dan Konversi",
+                    "MAT-DAT": "Statistika: Data dan Rata-rata", "MAT-POL": "Pola Bilangan", "MAT-KEC": "Kecepatan, Jarak, Waktu",
+                    "MAT-PEL": "Peluang", "MAT-LOG": "Logika Matematika", "MAT-ALJ": "Aljabar Sederhana"},
     "Pemahaman Bacaan": {"BAC-GAG": "Gagasan Utama", "BAC-INF": "Informasi Tersurat dan Tersirat", "BAC-SIM": "Simpulan dan Tujuan Penulis",
                          "BAC-MKN": "Makna Kata dalam Konteks"},
     "Verbal": {"VER-ANT": "Antonim", "VER-SIN": "Sinonim", "VER-ANA": "Analogi", "VER-KLS": "Klasifikasi / Kata yang Berbeda",
+               "VER-KOS": "Kosakata", "VER-LOG": "Logika Verbal (Wacana)", "VER-MIS": "Melengkapi Kata yang Hilang",
                "VER-BKU": "Kata Baku dan Tanda Baca"},
-    "IPA": {"IPA-PDR": "Peredaran Darah dan Pernapasan", "IPA-FOT": "Fotosintesis dan Tumbuhan", "IPA-LIS": "Listrik dan Rangkaian",
-            "IPA-GYA": "Gaya, Gerak, dan Energi", "IPA-WUJ": "Zat, Wujud, dan Perubahannya", "IPA-EKO": "Ekosistem dan Makhluk Hidup",
-            "IPA-BMI": "Bumi dan Tata Surya"},
+    "IPA": {"IPA-PDR": "Peredaran Darah dan Pernapasan", "IPA-PEN": "Pencernaan dan Gizi", "IPA-FOT": "Fotosintesis dan Tumbuhan",
+            "IPA-LIS": "Listrik dan Rangkaian", "IPA-MAG": "Magnet", "IPA-GYA": "Gaya, Gerak, dan Energi", "IPA-CAH": "Cahaya dan Bunyi",
+            "IPA-WUJ": "Zat, Wujud, dan Perubahannya", "IPA-EKO": "Ekosistem dan Makhluk Hidup", "IPA-BMI": "Bumi dan Tata Surya"},
     "IPS": {"IPS-PET": "Peta dan Kenampakan Alam", "IPS-EKN": "Kegiatan Ekonomi", "IPS-KEB": "Keberagaman dan Kehidupan Sosial",
             "IPS-SEJ": "Sejarah dan Peninggalan", "IPS-IDN": "Wilayah Indonesia dan ASEAN"},
 }
 TOPIC_SUBJECT = {code: subj for subj, d in TAXONOMY.items() for code in d}
 TOPIC_NAME = {code: name for d in TAXONOMY.values() for code, name in d.items()}
 
-# komposisi SEMENTARA per tryout (BRIEF §3; belum dikunci pemilik)
-COMPOSITION = {"Kuantitatif": 12, "Pemahaman Bacaan": 8, "Verbal": 6, "IPA": 8, "IPS": 6}
+# komposisi KERJA per tryout (2 Nov 2026). Pedoman resmi menyebut jenis soal tanpa jumlah; angka ini dari pengamatan Muse atas
+# tryout pesaing (40 soal satu daftar campur: ~12 bahasa, ~10 IPA, ~10 matematika/logika, ~3 IPS, ~5 karakter). Survei Karakter
+# tidak dinilai dan belum didukung mesin, jadi tidak dihitung di sini. Ubah hanya atas keputusan pemilik.
+COMPOSITION = {"Kuantitatif": 11, "Pemahaman Bacaan": 7, "Verbal": 7, "IPA": 10, "IPS": 5}
 FORBIDDEN_OPTS = re.compile(r"^(semua (benar|salah|jawaban)|.*\b[a-d] dan [a-d] benar\b|tidak ada (yang )?benar)", re.I)
 ID_RX = re.compile(r"^(?P<topic>[A-Z]{3}-[A-Z]{3})-L(?P<level>[123])-(?P<n>\d{4})$")
-REQ = ("id", "version", "subject", "topic", "level", "type", "stem", "options", "answer_idx", "explanation", "shortcut", "est_seconds")
+REQ = ("id", "version", "subject", "topic", "subtopic", "level", "type", "stem", "options", "answer_idx", "explanation", "shortcut", "est_seconds")
 _norm = lambda s: re.sub(r"\W+", " ", str(s).lower()).strip()
 
 
@@ -49,6 +53,7 @@ def validate_item(it: dict, passages: set) -> list[str]:
     elif TOPIC_SUBJECT[it["topic"]] != it["subject"]: e.append(f"subject harus '{TOPIC_SUBJECT[it['topic']]}' untuk {it['topic']}")
     if it["topic"].startswith("MAT-"): e.append("Kuantitatif wajib template, bukan butir JSONL")
     if it["level"] not in (1, 2, 3): e.append("level harus 1, 2, atau 3")
+    if not (isinstance(it["subtopic"], str) and 3 <= len(it["subtopic"].strip()) <= 60): e.append("subtopic wajib, 3-60 karakter (mis. 'Pecahan campuran')")
     if it["type"] != "pg4": e.append("type harus 'pg4'")
     if not isinstance(it["version"], int) or it["version"] < 1: e.append("version harus bilangan bulat >= 1")
     o = it["options"]
@@ -89,7 +94,7 @@ def _same_value(opts) -> bool:
 
 def validate_template_output(out: dict) -> list[str]:
     e = []
-    for k in ("topic", "level", "stem", "correct", "distractors", "explanation", "shortcut"):
+    for k in ("topic", "subtopic", "level", "stem", "correct", "distractors", "explanation", "shortcut"):
         if k not in out: e.append(f"keluaran tanpa '{k}'")
     if e: return e
     if out["topic"] not in TOPIC_SUBJECT or not out["topic"].startswith("MAT-"): e.append("topik template harus MAT-* kanonik")
@@ -192,16 +197,16 @@ class Bank:
         """Soal deterministik per seed dalam bentuk yang sama dengan bank STUB (id, subject, topic, level, q, opts, ans, no)
         plus topic_code, passage, explanation, shortcut. Butir di `exclude` (sudah pernah dikerjakan) dihindari bila stok cukup."""
         r = random.Random(seed); comp = composition or COMPOSITION; exclude = exclude or set(); out = []
-        def add(qid, subj, code, lvl, stem, opts, ans_text, expl, sc, passage=None):
+        def add(qid, subj, code, lvl, stem, opts, ans_text, expl, sc, passage=None, sub=""):
             opts = opts[:]; r.shuffle(opts)
-            out.append({"id": qid, "subject": subj, "topic": TOPIC_NAME[code], "topic_code": code, "level": lvl, "q": stem,
+            out.append({"id": qid, "subject": subj, "topic": TOPIC_NAME[code], "topic_code": code, "subtopic": sub, "level": lvl, "q": stem,
                         "opts": opts, "ans": opts.index(ans_text), "explanation": expl, "shortcut": sc, "passage": passage})
         for subj, n in comp.items():
             if subj == "Kuantitatif":
                 names = sorted(self.templates); r.shuffle(names)
                 for i in range(min(n, len(names) * 3)):
                     name = names[i % len(names)]; t = self.templates[name](random.Random(seed * 1000 + i))
-                    add(f"{name}#{seed}-{i}", subj, t["topic"], t["level"], t["stem"], [t["correct"], *t["distractors"]], t["correct"], t["explanation"], t["shortcut"])
+                    add(f"{name}#{seed}-{i}", subj, t["topic"], t["level"], t["stem"], [t["correct"], *t["distractors"]], t["correct"], t["explanation"], t["shortcut"], sub=t["subtopic"])
                 continue
             pool = [x for x in self.items.values() if x["subject"] == subj]
             fresh = [x for x in pool if x["id"] not in exclude]
@@ -219,6 +224,6 @@ class Bank:
             for x in picked:
                 p = self.passages.get(x.get("passage_id"))
                 add(x["id"], subj, x["topic"], x["level"], x["stem"], x["options"], x["options"][x["answer_idx"]], x["explanation"], x["shortcut"],
-                    {"id": p["passage_id"], "text": p["text"]} if p else None)
+                    {"id": p["passage_id"], "text": p["text"]} if p else None, sub=x["subtopic"])
         for n_, q in enumerate(out, 1): q["no"] = n_
         return out

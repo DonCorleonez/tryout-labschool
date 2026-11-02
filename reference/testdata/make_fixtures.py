@@ -13,7 +13,7 @@ P = {"passage_id": "BAC-P-0001", "topic": "BAC-GAG", "text": (
 
 
 def it(i, subj, topic, lvl, stem, opts, ans, pid=None, amb=False):
-    return {"id": f"{topic}-L{lvl}-{i:04d}", "version": 1, "subject": subj, "topic": topic, "level": lvl, "type": "pg4", "passage_id": pid, "stem": stem,
+    return {"id": f"{topic}-L{lvl}-{i:04d}", "version": 1, "subject": subj, "topic": topic, "subtopic": "Subtopik contoh", "level": lvl, "type": "pg4", "passage_id": pid, "stem": stem,
             "options": opts, "answer_idx": ans, "explanation": "Pembahasan contoh yang menjelaskan mengapa kunci benar dan pengecoh salah.",
             "shortcut": "Cara cepat contoh yang berlaku umum.", "shortcut_scope": "umum", "est_seconds": 60, "image": None, "ambiguous": amb, "notes": ""}
 

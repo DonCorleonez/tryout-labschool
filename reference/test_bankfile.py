@@ -37,13 +37,13 @@ def test_bank_with_rejects_has_no_items_from_broken_file():
 def test_template_collisions_are_caught():
     def bad_tpl(rng):                                   # pola contoh brief: a*b bisa sama dengan a+b (2*2 = 2+2)
         a = rng.choice([2, 3]); b = 2; d = 8
-        return {"topic": "MAT-PEC", "level": 1, "stem": "x", "correct": f"{a + b}/{d}", "distractors": [f"{a * b}/{d}", "1/9", "2/9"],
+        return {"topic": "MAT-PEC", "subtopic": "uji", "level": 1, "stem": "x", "correct": f"{a + b}/{d}", "distractors": [f"{a * b}/{d}", "1/9", "2/9"],
                 "explanation": "e" * 25, "shortcut": "s" * 12}
     assert any("kembar" in x for x in bf.check_template(bad_tpl, 50))
 
 
 def test_equivalent_fraction_options_caught():
-    out = {"topic": "MAT-PEC", "level": 1, "stem": "x", "correct": "1/2", "distractors": ["2/4", "1/3", "3/4"], "explanation": "e" * 25, "shortcut": "s" * 12}
+    out = {"topic": "MAT-PEC", "subtopic": "uji", "level": 1, "stem": "x", "correct": "1/2", "distractors": ["2/4", "1/3", "3/4"], "explanation": "e" * 25, "shortcut": "s" * 12}
     assert any("bernilai sama" in x for x in bf.validate_template_output(out))
 
 

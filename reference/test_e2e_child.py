@@ -69,7 +69,7 @@ def test_child_full_flow_with_refresh_resume(base, browser):
     page.click("#send"); page.wait_for_selector("text=Tryout terkumpul")
     assert page.locator(".score").inner_text().endswith("/12")
     page.screenshot(path=str(SHOTS / "anak-5-hasil.png"), full_page=True)
-    assert "Jawaban benar" in page.inner_text("main")
+    assert "Jawaban benar" in page.inner_text("main") and "Yang perlu dilatih lagi" in page.inner_text("main") and "salah " in page.inner_text(".topics")
 
     page.goto(f"{base}/child/#/beranda"); page.wait_for_selector("text=Sudah dikumpulkan")
     assert not errors, errors

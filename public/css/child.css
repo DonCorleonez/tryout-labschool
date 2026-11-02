@@ -63,6 +63,11 @@ input[type=text] { font: inherit; font-size: 1.4rem; letter-spacing: .12em; text
 .rv.no { border-left-color: var(--bad); }
 .tag { font-size: .85rem; font-weight: 700; }
 .tag.ok { color: var(--ok); } .tag.no { color: var(--bad); }
+.topics { list-style: none; padding: 0; margin: 0 0 8px; }
+.topics li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.topics li span:last-child { color: var(--bad); font-weight: 600; white-space: nowrap; }
+.card h3 { font-size: 1rem; margin: 12px 0 4px; }
+.where { font-size: .9rem; color: var(--ink-2); margin: 4px 0 0; }
 .toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 90vw; }
 .toast.on { opacity: 1; }
 .small-warn { display: none; }

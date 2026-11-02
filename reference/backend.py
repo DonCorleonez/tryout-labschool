@@ -302,6 +302,7 @@ class App:
     def _review(answers, qs, order):
         """Pembahasan pasca-submit (bahan Buku Salah). Hanya dipanggil SETELAH attempt tersimpan sebagai dikumpulkan."""
         return [{"no": n, "correct_idx": x.correct_idx, "chosen_idx": x.chosen_idx, "is_correct": x.chosen_idx == x.correct_idx,
+                 "subject": x.subject, "topic": x.topic, "subtopic": qs[qid].get("subtopic", ""),
                  "explanation": qs[qid].get("explanation", ""), "shortcut": qs[qid].get("shortcut", "")}
                 for n, (x, qid) in enumerate(zip(answers, order), 1)]
 

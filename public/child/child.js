@@ -238,10 +238,23 @@
     const s = res.score;
     const subj = Object.entries(s.subject).map(([k, v]) => `<span>${esc(k)}</span><span>${v.c}/${v.t}</span><div class="meter"><span style="width:${Math.round(100 * v.c / v.t)}%"></span></div>`).join('');
     const wrong = res.review.filter((x) => !x.is_correct);
+    const bySubj = {};                                   // mata uji -> topik -> {salah, total}
+    res.review.forEach((x) => {
+      const sj = x.subject || 'Lainnya', tp = x.topic || 'Lainnya';
+      const t = ((bySubj[sj] = bySubj[sj] || {})[tp] = bySubj[sj][tp] || { w: 0, n: 0 });
+      t.n++; if (!x.is_correct) t.w++;
+    });
+    const topicRows = Object.entries(bySubj).map(([sj, tps]) => {
+      const rows = Object.entries(tps).filter(([, v]) => v.w > 0).sort((a, b) => b[1].w - a[1].w)
+        .map(([tp, v]) => `<li><span>${esc(tp)}</span><span>salah ${v.w} dari ${v.n}</span></li>`).join('');
+      return rows ? `<h3>${esc(sj)}</h3><ul class="topics">${rows}</ul>` : '';
+    }).join('');
     const items = res.review.map((x) => {
       const q = Q && Q[x.no - 1];
       const chosen = x.chosen_idx == null ? 'tidak dijawab' : `${L[x.chosen_idx]}${q ? '. ' + esc(q.opts[x.chosen_idx]) : ''}`;
+      const where = [x.subject, x.topic, x.subtopic].filter(Boolean).map(esc).join(' › ');
       return `<div class="card rv ${x.is_correct ? 'ok' : 'no'}"><div class="row spread"><strong>Soal ${x.no}</strong><span class="tag ${x.is_correct ? 'ok' : 'no'}">${x.is_correct ? '✓ Benar' : '✗ Belum tepat'}</span></div>
+        ${where ? `<p class="where">${where}</p>` : ''}
         ${q ? `<p>${esc(q.q)}</p>` : ''}
         ${x.is_correct ? '' : `<p>Jawabanmu: ${chosen}<br>Jawaban benar: <strong>${L[x.correct_idx]}${q ? '. ' + esc(q.opts[x.correct_idx]) : ''}</strong></p>
         ${x.explanation ? `<p><strong>Pembahasan.</strong> ${esc(x.explanation)}</p>` : ''}${x.shortcut ? `<p><strong>Cara cepat.</strong> ${esc(x.shortcut)}</p>` : ''}`}</div>`;
@@ -249,6 +262,7 @@
     render(`<h1>Tryout terkumpul ✓</h1>
       <div class="card row spread"><div><div class="score">${s.correct}<span class="muted" style="font-size:1.4rem">/${s.total}</span></div><div class="muted">jawaban benar</div></div></div>
       <div class="card subj">${subj}</div>
+      ${topicRows ? `<div class="card"><h2 style="margin-top:0">Yang perlu dilatih lagi</h2>${topicRows}</div>` : '<p class="note">Semua jawaban benar. Hebat!</p>'}
       <p class="note">Soal yang belum tepat masuk ke Buku Salah. Laporan untuk orang tua terbit Senin pagi.</p>
       <h2>Pembahasan (${wrong.length} soal belum tepat)</h2>
       <p class="row"><button id="only" aria-pressed="true">Tampilkan semua soal</button></p>

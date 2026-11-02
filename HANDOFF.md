@@ -15,6 +15,7 @@ Sumber kebenaran kode sejak 2 Nov 2026 = repo ini. Dokumen Drive `impl-build/HAN
 - (2 Nov malam) Payment gateway = **Duitku** (POP API), email = **Resend**. Akun sedang didaftarkan Muse; kunci belum ada. UI memakai istilah "siswa"/"anak", bukan "keluarga".
 
 ## Keputusan terbuka (jangan ditebak)
+0. (2 Nov) Instrumen resmi dari Pedoman (tangkapan layar pemilik): Kuantitatif (geometri, statistika, peluang, logika, aljabar), Pemahaman Bacaan, Kemampuan Verbal (kata beda, kosakata, sinonim, analogi, klasifikasi, wacana, missing word), Akademik IPA & IPS, Survei Karakter (opini, tidak dinilai). TIDAK ada mata uji Bahasa Indonesia terpisah. Jumlah per mata uji tidak disebut.
 1. Jumlah soal & durasi per tryout: pemilik minta "sesuai aslinya". Angka resmi ada di Pedoman Jalur Tes 2027 (PDF psb.labschool-unj.sch.id) yang belum bisa dibaca agen; tunggu PDF dilampirkan. Sementara: 40 soal / 120 menit (`bankfile.COMPOSITION`, `backend.TRYOUT_LIMIT_SEC`). Catatan: satu sumber sekunder menyebut tes asli memakai CAT (adaptif) — perlu dicek di pedoman.
 2. Payment gateway: usulan Midtrans (lihat docs/IMPLEMENTATION-PLAN.md §12). Menunggu pilihan + akun pemilik.
 3. Email transaksional: usulan Resend (gratis 3.000/bulan, 100/hari). Menunggu pilihan + domain pengirim.
@@ -55,3 +56,10 @@ Sumber kebenaran kode sejak 2 Nov 2026 = repo ini. Dokumen Drive `impl-build/HAN
 - Tes: +12 (`test_integrations.py`, test_server). Total 130 Python + 6 JS.
 - BELUM DIVERIFIKASI terhadap API sungguhan (tidak ada kunci). Langkah pertama setelah kunci ada: satu transaksi sandbox end-to-end. Endpoint cek status/rekonsiliasi Duitku POP tidak ada di dokumen POP; rekonsiliasi pesanan menggantung belum dibuat.
 - BERIKUTNYA: cron laporan Senin + email laporan; sesi drill + Buku Salah kumulatif.
+
+### 2 Nov malam — taksonomi resmi, subtopik, ringkasan topik di hasil, prompt ChatGPT v2 (Claude)
+- Taksonomi diperluas sesuai instrumen resmi + cakupan buku referensi: MAT-PEL/LOG/ALJ, VER-KOS/LOG/MIS, IPA-PEN/MAG/CAH (total 40 topik). `subtopic` WAJIB di butir dan template.
+- `COMPOSITION` kerja = Kuantitatif 11, Bacaan 7, Verbal 7, IPA 10, IPS 5 (dari pengamatan Muse atas tryout pesaing: 40 soal campur ~12 bahasa/10 IPA/10 MTK/3 IPS/5 karakter). Survei Karakter belum didukung (tidak dinilai) — keputusan terbuka apakah disisipkan untuk pembiasaan.
+- Review pasca-submit kini membawa subject/topic/subtopic; halaman hasil anak menampilkan "Yang perlu dilatih lagi" per mata uji dan topik, plus label mata uji › topik › subtopik di tiap soal.
+- `docs/PROMPT-CHATGPT-bank-soal.md` v2: referensi dipakai untuk tipe/tingkat/gaya, soal baru bervariasi (bukan salin/parafrase dekat buku berbayar), bidang `ref_tipe`, target volume ±30% cadangan (≥170 Bacaan, ≥170 Verbal, ≥230 IPA, ≥110 IPS, ≥80 template MAT), kiriman ≤25 butir per jawaban.
+- Tes: 130 Python + 6 JS lulus.

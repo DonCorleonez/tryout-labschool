@@ -18,7 +18,7 @@ def mat_pec_tambah(rng):
     s = Fraction(a + b, d)
     f = lambda v: f"{v.numerator}/{v.denominator}"
     cands = [Fraction(a + b, 2 * d), Fraction(a * b, d), Fraction(a + b + 1, d), Fraction(a + b, d + 1), Fraction(a + b + 2, d), Fraction(abs(a - b) or 1, d)]
-    return {"topic": "MAT-PEC", "level": 1, "stem": f"Hitung: {a}/{d} + {b}/{d} = ... (bentuk paling sederhana)",
+    return {"topic": "MAT-PEC", "subtopic": "Penjumlahan pecahan berpenyebut sama", "level": 1, "stem": f"Hitung: {a}/{d} + {b}/{d} = ... (bentuk paling sederhana)",
             "correct": f(s), "distractors": _pick(s, cands, f),
             "explanation": "Penyebut sama, jadi pembilang dijumlahkan dan penyebut tetap, lalu disederhanakan. Menjumlahkan penyebut adalah kesalahan umum.",
             "shortcut": "Penyebut sama: jumlahkan atasnya saja, bawahnya tetap, lalu sederhanakan."}
@@ -29,7 +29,7 @@ def mat_psn_diskon(rng):
     bayar = harga * (100 - p) // 100; potong = harga * p // 100
     rp = lambda v: "Rp" + f"{v:,}".replace(",", ".")
     cands = [potong, harga - p * 100, harga + potong, harga, harga - p * 1000, bayar - potong]
-    return {"topic": "MAT-PSN", "level": 2, "stem": f"Harga sebuah tas {rp(harga)}. Tas itu didiskon {p}%. Berapa yang harus dibayar?",
+    return {"topic": "MAT-PSN", "subtopic": "Diskon dan harga bayar", "level": 2, "stem": f"Harga sebuah tas {rp(harga)}. Tas itu didiskon {p}%. Berapa yang harus dibayar?",
             "correct": rp(bayar), "distractors": _pick(bayar, cands, rp),
             "explanation": "Diskon adalah potongan dari harga. Hitung potongan, lalu kurangkan dari harga awal. Pengecoh pertama hanya besar potongannya.",
             "shortcut": "Bayar = harga x (100 - diskon)/100."}
