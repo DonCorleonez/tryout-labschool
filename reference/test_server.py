@@ -93,7 +93,15 @@ def test_production_requires_real_secrets():
     with pytest.raises(sv.ConfigError):            # bank STUB dilarang di produksi
         cfg.validate()
     cfg.bank_dir = "bank"
+    with pytest.raises(sv.ConfigError):            # gateway sim / mail log dilarang di produksi
+        cfg.validate()
+    cfg.env = {"GATEWAY": "duitku", "DUITKU_SANDBOX": "0", "MAIL": "resend"}
     cfg.validate()
+
+
+def test_build_refuses_duitku_without_keys():
+    with pytest.raises(sv.ConfigError):
+        sv.build(sv.Config(port=0, db_path=":memory:", env={"GATEWAY": "duitku"}))
 
 
 def test_config_from_env():

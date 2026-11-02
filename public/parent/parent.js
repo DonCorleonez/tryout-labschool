@@ -21,6 +21,7 @@
     sudah_terdaftar: 'Email atau nomor WhatsApp ini sudah terdaftar. Silakan masuk dengan PIN Anda.',
     paket_sudah_aktif: 'Paket utama sudah aktif.',
     harga_belum_ditetapkan: 'Paket ini belum dibuka.',
+    gateway_gagal: 'Halaman pembayaran belum bisa dibuka. Coba lagi beberapa menit lagi.',
   };
   const FIELD = { name: 'Isi nama orang tua.', whatsapp: 'Nomor WhatsApp diawali 08 atau +62.', email: 'Periksa alamat email.', consent: 'Centang persetujuan untuk melanjutkan.', pin: 'PIN berisi 6 angka.' };
   const PHASE = ['Diagnostik', 'Fondasi', 'Fondasi', 'Fondasi', 'Fondasi', 'Fondasi', 'Akselerasi', 'Akselerasi', 'Akselerasi', 'Intensif', 'Intensif', 'Gladi bersih'];
@@ -128,10 +129,15 @@
     let buy;
     if (paid) buy = '<p class="ok"><strong>Paket utama aktif.</strong> Tryout terbuka setiap Jumat 17.00 sampai Minggu 16.00.</p>';
     else if (h.offer.amount_idr == null) buy = '<p class="muted">Paket untuk pendaftar setelah 9 Desember sedang disiapkan.</p>';
-    else if (!h.playtest) buy = `<p>Paket utama <strong>${rp(h.offer.amount_idr)}</strong> untuk ${esc(h.offer.tryouts)} tryout sampai hari tes.</p><p class="muted">Pembayaran online segera dibuka. Diagnostik gratis tetap bisa dikerjakan sekarang.</p>`;
-    else buy = `<p>Paket utama <strong>${rp(h.offer.amount_idr)}</strong> untuk ${esc(h.offer.tryouts)} tryout sampai hari tes.</p>
-        ${pending ? `<p class="muted">Pesanan ${esc(pending.order)} menunggu pembayaran.</p><button class="btn solid" id="pay" data-o="${esc(pending.order)}">Bayar (simulasi playtest)</button>` : '<button class="btn solid" id="order">Beli paket</button>'}
-        <p class="muted" style="margin-top:.8em">Mode playtest: pembayaran disimulasikan, tidak ada uang berpindah.</p>`;
+    else if (h.gateway === 'sim' && !h.playtest) buy = `<p>Paket utama <strong>${rp(h.offer.amount_idr)}</strong> untuk ${esc(h.offer.tryouts)} tryout sampai hari tes.</p><p class="muted">Pembayaran online segera dibuka. Diagnostik gratis tetap bisa dikerjakan sekarang.</p>`;
+    else {
+      const head = `<p>Paket utama <strong>${rp(h.offer.amount_idr)}</strong> untuk ${esc(h.offer.tryouts)} tryout sampai hari tes.</p>`;
+      if (pending && pending.payment_url) buy = head + `<p class="muted">Ada pesanan yang menunggu pembayaran.</p><a class="btn solid" href="${esc(pending.payment_url)}">Lanjutkan pembayaran</a>
+          <p class="muted" style="margin-top:.8em">Paket aktif otomatis beberapa saat setelah pembayaran berhasil. Muat ulang halaman ini setelah membayar.</p>`;
+      else if (pending && h.playtest) buy = head + `<p class="muted">Pesanan ${esc(pending.order)} menunggu pembayaran.</p><button class="btn solid" id="pay" data-o="${esc(pending.order)}">Bayar (simulasi playtest)</button>
+          <p class="muted" style="margin-top:.8em">Mode playtest: pembayaran disimulasikan, tidak ada uang berpindah.</p>`;
+      else buy = head + '<button class="btn solid" id="order">Beli paket</button><p class="muted" style="margin-top:.8em">Anda akan diarahkan ke halaman pembayaran Duitku untuk memilih metode bayar.</p>';
+    }
     render(`<h1>Dashboard</h1>
       <section class="panel"><h2>Paket</h2>${buy}<div id="e" class="err" hidden></div></section>
       <section class="panel"><h2>Laporan terbaru</h2>${report}</section>
@@ -139,6 +145,7 @@
     const err = $('#e');
     const order = $('#order'); if (order) order.onclick = async () => {
       order.disabled = true; const r = await api.post('/api/parent/orders', {});
+      if (r.status === 200 && r.json.payment_url) { location.href = r.json.payment_url; return; }
       if (r.status === 200) return viewHome(); err.textContent = ERR[r.json && r.json.error] || 'Pesanan belum berhasil dibuat.'; err.hidden = false; order.disabled = false;
     };
     const pay = $('#pay'); if (pay) pay.onclick = async () => {

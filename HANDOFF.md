@@ -12,7 +12,7 @@ Sumber kebenaran kode sejak 2 Nov 2026 = repo ini. Dokumen Drive `impl-build/HAN
 - Implementasi: Claude (Opus); bank soal: ChatGPT; cadangan: Codex.
 
 - (2 Nov sore) Diagnostik gratis: SATU kali per siswa dan SATU set soal yang sama untuk semua (`backend.DIAG_SEED`), supaya akun ganda tidak membuka soal baru. Email/WA yang sudah terdaftar ditolak (409 `sudah_terdaftar`). Keluarga yang bayar belakangan tidak mengulang diagnostik.
-- (2 Nov sore) Midtrans DITUNDA (jangan kerjakan P5 dulu). UI memakai istilah "siswa"/"anak", bukan "keluarga".
+- (2 Nov malam) Payment gateway = **Duitku** (POP API), email = **Resend**. Akun sedang didaftarkan Muse; kunci belum ada. UI memakai istilah "siswa"/"anak", bukan "keluarga".
 
 ## Keputusan terbuka (jangan ditebak)
 1. Jumlah soal & durasi per tryout: pemilik minta "sesuai aslinya". Angka resmi ada di Pedoman Jalur Tes 2027 (PDF psb.labschool-unj.sch.id) yang belum bisa dibaca agen; tunggu PDF dilampirkan. Sementara: 40 soal / 120 menit (`bankfile.COMPOSITION`, `backend.TRYOUT_LIMIT_SEC`). Catatan: satu sumber sekunder menyebut tes asli memakai CAT (adaptif) — perlu dicek di pedoman.
@@ -46,3 +46,12 @@ Sumber kebenaran kode sejak 2 Nov 2026 = repo ini. Dokumen Drive `impl-build/HAN
 - PERHATIAN sebelum penjualan berbayar dibuka: copy menjanjikan pengingat email dan laporan Senin otomatis; keduanya baru nyata setelah P6 (email) dan cron laporan. Jangan buka penjualan sebelum itu.
 - Tes: 118 Python + 6 JS lulus.
 - BERIKUTNYA (Midtrans ditunda): P6 adaptor email (log-only + Resend) dan cron laporan Senin, atau sesi drill + Buku Salah kumulatif.
+
+### 2 Nov malam — adaptor Duitku + Resend (Claude)
+- `reference/integrations.py`: `DuitkuGateway` (createInvoice POP: HMAC_SHA256(merchantCode+timestamp, apiKey); callback form-urlencoded: HMAC_SHA256(merchantCode+amount+merchantOrderId, apiKey), resultCode 00 = lunas), `ResendMailer` (Idempotency-Key), `SimGateway`/`LogMailer` untuk lokal. Pilih lewat env `GATEWAY`, `MAIL` (lihat docs/DEPLOY.md).
+- Backend: pesanan memanggil gateway, simpan `payment_url`; klik ganda memakai invoice yang sama; gateway mati -> 502 `gateway_gagal` tapi jejak pesanan tersimpan. `POST /api/webhooks/duitku`: tanda tangan salah 401, nominal beda dengan pesanan 400 (tidak aktif), callback ulang idempoten. Outbox email (`email_outbox`): selamat datang (TANPA kode siswa) + pembayaran lunas; dikirim worker tiap 30 detik, gagal diulang s.d. 5x lalu `gagal`.
+- Server menolak start di host produksi kecuali GATEWAY=duitku, DUITKU_SANDBOX=0, MAIL=resend.
+- UI orang tua: tombol Beli -> redirect ke paymentUrl Duitku; pesanan menunggu -> "Lanjutkan pembayaran".
+- Tes: +12 (`test_integrations.py`, test_server). Total 130 Python + 6 JS.
+- BELUM DIVERIFIKASI terhadap API sungguhan (tidak ada kunci). Langkah pertama setelah kunci ada: satu transaksi sandbox end-to-end. Endpoint cek status/rekonsiliasi Duitku POP tidak ada di dokumen POP; rekonsiliasi pesanan menggantung belum dibuat.
+- BERIKUTNYA: cron laporan Senin + email laporan; sesi drill + Buku Salah kumulatif.

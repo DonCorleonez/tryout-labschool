@@ -7,12 +7,14 @@ selama tes di test_backend.py tetap lulus.
 from __future__ import annotations
 
 import hashlib, hmac, json, re, secrets, sqlite3, zlib
+from urllib.parse import parse_qsl
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import analysis as an
 import bank
 import schedule as sc
+import integrations as ig
 
 TRYOUT_LIMIT_SEC = 7200          # durasi satu tryout (placeholder sampai spesifikasi format final)
 # KEPUTUSAN PEMILIK 2026-11-01: tryout yang DIMULAI sebelum jendela tutup (Min 16.00) diterima sampai selesai,
@@ -47,10 +49,16 @@ class Err(Exception):
 
 
 class App:
-    def __init__(self, db_path=":memory:", now=None, webhook_secret="dev-secret", admin_token="dev-admin", playtest=False):
+    def __init__(self, db_path=":memory:", now=None, webhook_secret="dev-secret", admin_token="dev-admin", playtest=False,
+                 gateway=None, mailer=None, base_url="http://127.0.0.1:8080"):
         self.db = sqlite3.connect(db_path, check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.executescript((Path(__file__).with_name("schema.sql")).read_text())
+        try:
+            self.db.execute("ALTER TABLE orders ADD COLUMN payment_url TEXT")      # migrasi DB lama
+        except sqlite3.OperationalError:
+            pass
+        self.gateway, self.mailer, self.base_url = gateway or ig.SimGateway(), mailer or ig.LogMailer(), base_url.rstrip("/")
         self._now = now or (lambda: datetime.now(sc.WIB))
         self.secret, self.admin_token, self.playtest = webhook_secret.encode(), admin_token, playtest
         self.routes = [(m, re.compile("^" + p + "$"), fn) for m, p, fn in [
@@ -59,6 +67,7 @@ class App:
             ("POST", r"/api/child/attempts/(?P<ref>att_\w+)/events", self.events), ("POST", r"/api/child/attempts/(?P<ref>att_\w+)/submit", self.submit),
             ("GET", r"/api/child/drills", self.drills), ("POST", r"/api/child/drills/(?P<aid>\d+)/sessions/(?P<n>\d+)/finish", self.drill_finish),
             ("POST", r"/api/parent/orders", self.order_new), ("POST", r"/api/webhooks/payment", self.webhook),
+            ("POST", r"/api/webhooks/duitku", self.webhook_duitku),
             ("GET", r"/api/parent/report/latest", self.report_latest), ("GET", r"/api/parent/home", self.parent_home),
             ("POST", r"/api/playtest/orders/(?P<oref>ord_\w+)/pay", self.playtest_pay),
             ("GET", r"/api/admin/queue", self.admin_queue), ("POST", r"/api/admin/analysis/standin", self.admin_standin),
@@ -78,10 +87,13 @@ class App:
                 mt = rx.match(path) if m == method else None
                 if mt:
                     ctx = {"h": headers, "raw": body, "ip": ip, "now": self.now(headers), "args": mt.groupdict()}
-                    try:
-                        ctx["json"] = json.loads(body) if body else {}
-                    except ValueError:
-                        raise Err(400, "json_tidak_valid")
+                    if "x-www-form-urlencoded" in headers.get("content-type", ""):
+                        ctx["form"], ctx["json"] = dict(parse_qsl(body.decode(errors="replace"))), {}
+                    else:
+                        try:
+                            ctx["json"] = json.loads(body) if body else {}
+                        except ValueError:
+                            raise Err(400, "json_tidak_valid")
                     out = fn(ctx)
                     self.db.commit()
                     return 200, out
@@ -128,6 +140,10 @@ class App:
                         (fid, j["name"], j["whatsapp"], j["email"], j.get("campus"), j.get("track"), j.get("grade"), iso(c["now"])))
         tok = secrets.token_urlsafe(24)
         self.db.execute("INSERT INTO sessions VALUES(?,?,?,?,?,?)", (sha(tok), fid, "parent", c["h"].get("user-agent", ""), iso(c["now"]), iso(c["now"])))
+        self.enqueue_email(fid, "selamat_datang", f"welcome:{ref}", "Akun Tryout Labschool sudah aktif",
+                           "Akun Anda sudah aktif.\n\nAnak bisa mengerjakan diagnostik gratis kapan saja di " + self.base_url + "/child/ "
+                           "dengan kode siswa yang tampil saat pendaftaran. Demi keamanan, kode itu tidak kami kirim lewat email.\n\n"
+                           "Masuk dashboard orang tua: " + self.base_url + "/parent/", c["now"])
         return {"token": tok, "family_ref": ref, "child_code": code, "join_window": sc.join_window(c["now"])}   # kode asli hanya sekali
 
     def parent_login(self, c):
@@ -329,17 +345,74 @@ class App:
         if s["plan"] in ("utama", "kejar"): raise Err(409, "paket_sudah_aktif")
         amount = IDR.get(plan)
         if amount is None: raise Err(409, "harga_belum_ditetapkan", "Paket ini belum dibuka.")    # invarian 14: harga dari server, bukan klien
-        ref = "ord_" + secrets.token_hex(4); gw = "SIM-" + secrets.token_hex(3).upper()
-        cur = self.db.execute("INSERT INTO orders(public_ref,family_id,plan,amount_idr,status,gateway,gateway_ref,created_at) VALUES(?,?,?,?,?,?,?,?)", (ref, s["family_id"], plan, amount, "menunggu", "sim", gw, iso(c["now"])))
-        for kind, d in (("request_diterima_server", plan), ("dikirim_ke_gateway", gw)):
-            self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (cur.lastrowid, kind, d, iso(c["now"])))
-        return {"order": ref, "status": "menunggu", "gateway_ref": gw, "plan": plan, "amount_idr": amount}
+        pend = self.db.execute("SELECT * FROM orders WHERE family_id=? AND status='menunggu' AND payment_url IS NOT NULL ORDER BY id DESC LIMIT 1", (s["family_id"],)).fetchone()
+        if pend and pend["amount_idr"] == amount:                          # klik ganda / kembali dari halaman bayar: pakai invoice yang sama
+            return {"order": pend["public_ref"], "status": "menunggu", "gateway_ref": pend["gateway_ref"], "plan": pend["plan"], "amount_idr": amount, "payment_url": pend["payment_url"]}
+        ref = "ord_" + secrets.token_hex(4)
+        cur = self.db.execute("INSERT INTO orders(public_ref,family_id,plan,amount_idr,status,gateway,created_at) VALUES(?,?,?,?,?,?,?)", (ref, s["family_id"], plan, amount, "dibuat", self.gateway.name, iso(c["now"])))
+        oid = cur.lastrowid
+        self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (oid, "request_diterima_server", plan, iso(c["now"])))
+        email = self.db.execute("SELECT email FROM marketing_leads WHERE family_id=?", (s["family_id"],)).fetchone()["email"]
+        try:
+            inv = self.gateway.create_invoice(ref, amount, email, "Paket utama Tryout Labschool", self.base_url + "/api/webhooks/duitku",
+                                              self.base_url + "/parent/#/beranda")
+        except ig.GatewayError as e:
+            self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (oid, "gateway_gagal", str(e)[:200], iso(c["now"])))
+            self.db.commit()                                                   # jejak pesanan tetap tersimpan
+            raise Err(502, "gateway_gagal", "Halaman pembayaran belum bisa dibuka. Coba lagi beberapa menit lagi.")
+        self.db.execute("UPDATE orders SET status='menunggu', gateway_ref=?, payment_url=? WHERE id=?", (inv["reference"], inv["payment_url"], oid))
+        self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (oid, "dikirim_ke_gateway", inv["reference"], iso(c["now"])))
+        return {"order": ref, "status": "menunggu", "gateway_ref": inv["reference"], "plan": plan, "amount_idr": amount, "payment_url": inv["payment_url"]}
+
+    def webhook_duitku(self, c):
+        """Callback Duitku (form-urlencoded). 200 = diterima (Duitku berhenti mengulang). Idempoten per reference+resultCode."""
+        if not isinstance(self.gateway, ig.DuitkuGateway): raise Err(404, "tidak_ada")
+        cb = self.gateway.parse_callback(c.get("form", {}))
+        raw = c["raw"].decode(errors="replace")[:500]
+        if not cb["ok"]:
+            self.db.execute("INSERT OR IGNORE INTO webhook_events VALUES(?,?,?,?,?)", ("bad-" + secrets.token_hex(4), cb["order_ref"], 0, iso(c["now"]), raw))
+            self.db.commit(); raise Err(401, "tanda_tangan_tidak_valid")
+        if self.db.execute("SELECT 1 FROM webhook_events WHERE gateway_event_id=?", (cb["event_id"],)).fetchone(): return {"duplikat": True}
+        o = self.db.execute("SELECT * FROM orders WHERE public_ref=?", (cb["order_ref"],)).fetchone()
+        if not o: raise Err(404, "pesanan_tidak_ada")
+        if cb["amount"] != o["amount_idr"]:                                    # jangan aktifkan bila nominal tidak sama dengan pesanan
+            self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (o["id"], "jumlah_tidak_cocok", str(cb["amount"]), iso(c["now"])))
+            self.db.commit(); raise Err(400, "jumlah_tidak_cocok")
+        self.db.execute("INSERT INTO webhook_events VALUES(?,?,?,?,?)", (cb["event_id"], cb["order_ref"], 1, iso(c["now"]), raw))
+        self._apply_payment(o, cb["status"], cb["event_id"], c["now"])
+        return {"ok": True, "status": cb["status"]}
+
+    def enqueue_email(self, fid, kind, dedupe, subject, text, now):
+        to = self.db.execute("SELECT email FROM marketing_leads WHERE family_id=?", (fid,)).fetchone()
+        if not to: return
+        self.db.execute("INSERT OR IGNORE INTO email_outbox(family_id,kind,to_addr,subject,body_text,dedupe_key,created_at) VALUES(?,?,?,?,?,?,?)",
+                        (fid, kind, to["email"], subject, text, dedupe, iso(now)))
+
+    def flush_outbox(self, limit=50, max_attempts=5):
+        """Kirim email antre. Dipanggil berkala oleh server (bukan di dalam request). Gagal -> dicoba lagi s.d. max_attempts."""
+        rows = self.db.execute("SELECT * FROM email_outbox WHERE status='antre' AND attempts<? ORDER BY id LIMIT ?", (max_attempts, limit)).fetchall()
+        sent = 0
+        for r in rows:
+            try:
+                res = self.mailer.send(r["to_addr"], r["subject"], r["body_text"], idem=r["dedupe_key"] or f"email-{r['id']}")
+                st = "log" if self.mailer.name == "log" else "terkirim"
+                self.db.execute("UPDATE email_outbox SET status=?, provider_id=?, attempts=attempts+1, sent_at=? WHERE id=?", (st, res["id"], iso(self._now()), r["id"])); sent += 1
+            except Exception as e:                                                # noqa: BLE001
+                self.db.execute("UPDATE email_outbox SET attempts=attempts+1, error=?, status=CASE WHEN attempts+1>=? THEN 'gagal' ELSE 'antre' END WHERE id=?",
+                                (str(e)[:200], max_attempts, r["id"]))
+            self.db.commit()
+        return sent
 
     def _apply_payment(self, o, st, eid, now):
         if o["status"] != "paid":
             self.db.execute("UPDATE orders SET status=?, paid_at=? WHERE id=?", (st, iso(now) if st == "paid" else None, o["id"]))
             self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (o["id"], "webhook_" + st, eid, iso(now)))
-            if st == "paid": self.db.execute("UPDATE families SET plan=? WHERE id=?", (o["plan"], o["family_id"]))
+            if st == "paid":
+                self.db.execute("UPDATE families SET plan=? WHERE id=?", (o["plan"], o["family_id"]))
+                self.enqueue_email(o["family_id"], "bayar_lunas", f"paid:{o['public_ref']}", "Pembayaran diterima: paket utama aktif",
+                                   f"Terima kasih. Pembayaran {o['public_ref']} sebesar Rp{o['amount_idr']:,}".replace(",", ".") +
+                                   " sudah kami terima dan paket utama aktif.\n\nTryout terbuka setiap Jumat 17.00 sampai Minggu 16.00. "
+                                   "Laporan terbit Senin pukul 07.00.\n\nDashboard: " + self.base_url + "/parent/", now)
 
     def playtest_pay(self, c):
         """HANYA mode playtest: tombol 'bayar simulasi' tanpa gateway. Di produksi rute ini 404."""
@@ -355,13 +428,13 @@ class App:
         atts = [{"tryout": r["tryout_id"], "window": r["window_k"], "submitted_at": r["submitted_at"],
                  "pct": json.loads(r["score_json"])["score"]["pct"] if r["score_json"] else None}
                 for r in self.db.execute("SELECT * FROM attempts WHERE family_id=? ORDER BY id", (fid,))]
-        orders = [{"order": r["public_ref"], "status": r["status"], "amount_idr": r["amount_idr"], "created_at": r["created_at"]}
+        orders = [{"order": r["public_ref"], "status": r["status"], "amount_idr": r["amount_idr"], "created_at": r["created_at"], "payment_url": r["payment_url"]}
                   for r in self.db.execute("SELECT * FROM orders WHERE family_id=? ORDER BY id DESC LIMIT 5", (fid,))]
         offer = "kejar" if c["now"] >= sc.GATE_PRESTASI else "utama"
         return {"family_ref": s["public_ref"], "plan": s["plan"], "join_window": s["join_window"], "clock": st.kind,
                 "window": st.window.k if st.window else None, "attempts": atts, "orders": orders,
                 "offer": {"plan": offer, "amount_idr": IDR.get(offer), "tryouts": sc.total_for_family(sc.join_window(c["now"]), "utama")},
-                "playtest": self.playtest}
+                "playtest": self.playtest, "gateway": self.gateway.name}
 
     def webhook(self, c):
         sig = c["h"].get("x-signature", ""); ok = hmac.compare_digest(sig, hmac.new(self.secret, c["raw"], hashlib.sha256).hexdigest())

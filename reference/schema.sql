@@ -80,3 +80,10 @@ CREATE TABLE IF NOT EXISTS discount_codes (code TEXT PRIMARY KEY, family_id INTE
 CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, actor TEXT, action TEXT, detail TEXT, at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_attempts_family_window ON attempts(family_id, window_k);
 CREATE INDEX IF NOT EXISTS idx_jobs_state ON analysis_jobs(state);
+CREATE TABLE IF NOT EXISTS email_outbox (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, family_id INTEGER REFERENCES families(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL, to_addr TEXT NOT NULL, subject TEXT NOT NULL, body_text TEXT NOT NULL,
+  dedupe_key TEXT UNIQUE,                       -- satu email per kejadian (mis. paid:ord_x), aman bila dipanggil ulang
+  status TEXT NOT NULL DEFAULT 'antre',         -- antre|terkirim|gagal|log
+  attempts INTEGER NOT NULL DEFAULT 0, provider_id TEXT, error TEXT, created_at TEXT NOT NULL, sent_at TEXT
+);

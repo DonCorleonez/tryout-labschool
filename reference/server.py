@@ -35,6 +35,7 @@ class Config:
     public_dir: str = str(Path(__file__).resolve().parent.parent / "public")
     trust_proxy: bool = False                            # True bila di belakang Cloudflare Tunnel/reverse proxy
     bank_dir: str = ""                                   # folder bank tervalidasi; kosong = bank STUB (dilarang di produksi)
+    env: dict = field(default_factory=dict)              # GATEWAY, DUITKU_*, MAIL, RESEND_API_KEY, MAIL_FROM
 
     @classmethod
     def from_env(cls, env=None) -> "Config":
@@ -49,7 +50,12 @@ class Config:
         c.production_hosts = {h.strip().lower() for h in e.get("PRODUCTION_HOSTS", "").split(",") if h.strip()}
         c.public_dir = e.get("PUBLIC_DIR", c.public_dir)
         c.bank_dir = e.get("BANK_DIR", c.bank_dir)
+        c.env = {k: e[k] for k in ("GATEWAY", "DUITKU_MERCHANT_CODE", "DUITKU_API_KEY", "DUITKU_SANDBOX", "MAIL", "RESEND_API_KEY", "MAIL_FROM") if k in e}
         return c
+
+    @property
+    def base_url(self) -> str:
+        return ("http://" if self.public_host in ("localhost", "127.0.0.1") else "https://") + self.public_host
 
     @property
     def is_production(self) -> bool:
@@ -65,6 +71,10 @@ class Config:
             raise ConfigError("DB_PATH :memory: tidak boleh di produksi")
         if self.is_production and not self.bank_dir:
             raise ConfigError("BANK_DIR wajib di produksi (bank STUB hanya untuk uji)")
+        if self.is_production and (self.env.get("GATEWAY", "sim") != "duitku" or str(self.env.get("DUITKU_SANDBOX", "1")) in ("1", "true", "yes")):
+            raise ConfigError("produksi wajib GATEWAY=duitku dengan DUITKU_SANDBOX=0")
+        if self.is_production and self.env.get("MAIL", "log") != "resend":
+            raise ConfigError("produksi wajib MAIL=resend")
 
 
 SEC_HEADERS = {
@@ -150,12 +160,33 @@ def build(cfg: Config):
         sys.stderr.write(b.report().splitlines()[0] + "\n")
         if cfg.is_production and not b.items:
             raise ConfigError("bank di BANK_DIR tidak berisi butir lolos validasi")
-    app = App(db_path=cfg.db_path, webhook_secret=cfg.webhook_secret, admin_token=cfg.admin_token, playtest=cfg.playtest)
+    import integrations as ig
+    try:
+        gw, ml = ig.gateway_from_env(cfg.env), ig.mailer_from_env(cfg.env)
+    except ig.GatewayError as e:
+        raise ConfigError(str(e))
+    app = App(db_path=cfg.db_path, webhook_secret=cfg.webhook_secret, admin_token=cfg.admin_token, playtest=cfg.playtest,
+              gateway=gw, mailer=ml, base_url=cfg.base_url)
     if cfg.db_path != ":memory:":
         app.db.execute("PRAGMA journal_mode=WAL")
-    srv = ThreadingHTTPServer((cfg.host, cfg.port), make_handler(app, cfg, threading.Lock()))
+    db_lock = threading.Lock()
+    srv = ThreadingHTTPServer((cfg.host, cfg.port), make_handler(app, cfg, db_lock))
+    srv.db_lock = db_lock
     srv.daemon_threads = True
     return srv, app
+
+
+def start_outbox_worker(app, lock, every=30):
+    """Kirim email antre di luar request. Satu thread, memakai kunci DB yang sama dengan request."""
+    import time
+    def loop():
+        while True:
+            time.sleep(every)
+            try:
+                with lock: app.flush_outbox()
+            except Exception:                         # noqa: BLE001
+                import traceback; traceback.print_exc()
+    threading.Thread(target=loop, daemon=True).start()
 
 
 def main():
@@ -164,7 +195,9 @@ def main():
         srv, _ = build(cfg)
     except ConfigError as e:
         sys.stderr.write("KONFIGURASI DITOLAK: %s\n" % e); sys.exit(2)
-    print(f"tryout server di http://{cfg.host}:{srv.server_address[1]} (playtest={cfg.playtest}, host={cfg.public_host})", flush=True)
+    start_outbox_worker(_, srv.db_lock)
+    print(f"tryout server di http://{cfg.host}:{srv.server_address[1]} (playtest={cfg.playtest}, host={cfg.public_host}, "
+          f"gateway={_.gateway.name}, mail={_.mailer.name})", flush=True)
     srv.serve_forever()
 
 
