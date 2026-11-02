@@ -1,0 +1,124 @@
+/* Landing + area orang tua. Palet diambil dari seragam: putih kapur + biru dongker SMP, merah SD hanya untuk penanda hari tes / minggu ini. */
+:root {
+  --dongker: #1d2b57; --dongker-2: #2c3d72; --kapur: #f5f7fb; --putih: #ffffff;
+  --garis: #c9d1e3; --langit: #e3eaf7; --tinta: #18203a; --tinta-2: #4a5470; --merah: #b8322a;
+  --hijau: #1f6b3d; --stack: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body.site { margin: 0; background: var(--kapur); color: var(--tinta); font: 17px/1.6 var(--stack); }
+a { color: var(--dongker); }
+a:focus-visible, .btn:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid #e0a800; outline-offset: 2px; }
+h1, h2, h3 { line-height: 1.15; letter-spacing: -0.015em; margin: 0 0 .5em; }
+h1 { font-size: clamp(2.1rem, 4.6vw, 3.5rem); font-weight: 800; max-width: 15ch; }
+h2 { font-size: clamp(1.45rem, 2.6vw, 2rem); font-weight: 800; }
+h3 { font-size: 1.05rem; font-weight: 700; letter-spacing: 0; }
+p { margin: 0 0 1em; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+.masthead { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px clamp(18px, 5vw, 56px); }
+.mark { font-weight: 800; letter-spacing: -0.01em; text-decoration: none; color: var(--dongker); font-size: 1.1rem; }
+.masthead nav { display: flex; gap: 20px; font-size: .95rem; }
+.masthead nav a { text-decoration: none; white-space: nowrap; }
+.mark { white-space: nowrap; }
+.masthead nav a:hover { text-decoration: underline; }
+
+main > section { padding: clamp(40px, 7vw, 88px) clamp(18px, 5vw, 56px); max-width: 1180px; margin: 0 auto; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 10px 22px; border-radius: 6px; font-weight: 700; text-decoration: none; border: 2px solid var(--dongker); font-size: 1rem; cursor: pointer; font-family: inherit; }
+.btn.solid { background: var(--dongker); color: var(--putih); }
+.btn.solid:hover { background: var(--dongker-2); }
+.btn.line { background: transparent; color: var(--dongker); }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 1.6em 0 1em; }
+.fine { font-size: .9rem; color: var(--tinta-2); max-width: 60ch; }
+.lede { font-size: 1.15rem; max-width: 52ch; color: var(--tinta); }
+
+/* hero: teks kiri, kalender musim kanan */
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr); gap: clamp(28px, 5vw, 72px); align-items: start; padding-top: clamp(24px, 4vw, 48px) !important; }
+.season { background: var(--dongker); color: var(--putih); border-radius: 10px; padding: 26px 26px 20px; }
+.season h2 { font-size: 1.25rem; margin-bottom: .2em; }
+.season-sub { color: #c5cff0; font-size: .95rem; }
+.weeks { list-style: none; margin: 14px 0 12px; padding: 0; font-variant-numeric: tabular-nums; }
+.weeks li { display: grid; grid-template-columns: 6.5em 1fr auto; gap: 12px; align-items: center; padding: 7px 10px; border-top: 1px solid rgba(255,255,255,.14); font-size: .95rem; }
+.weeks time { color: #dfe5f7; }
+.weeks b { color: #9fb0e6; letter-spacing: 2px; font-weight: 400; }
+.weeks li.now { background: var(--putih); color: var(--dongker); border-radius: 6px; border-top-color: transparent; font-weight: 700; }
+.weeks li.now time, .weeks li.now b { color: var(--merah); }
+.weeks li.now + li { border-top-color: transparent; }
+.weeks li.test-day { margin-top: 8px; border-top: 2px solid var(--merah); color: var(--putih); font-weight: 800; font-size: 1.05rem; }
+.weeks li.test-day time { color: #ffb4ad; }
+.season-note { font-size: .85rem; color: #c5cff0; margin: 0; }
+
+/* contoh laporan */
+.report { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
+.plain { padding-left: 1.1em; margin: 0 0 1em; }
+.plain li { margin: .35em 0; }
+.sheet { margin: 0; background: var(--putih); border: 1px solid var(--garis); border-radius: 4px; padding: 26px 28px; box-shadow: 0 1px 0 var(--garis), 0 18px 40px -28px rgba(29,43,87,.45); }
+.sheet figcaption { font-size: .8rem; color: var(--tinta-2); margin-bottom: 14px; }
+.sheet-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 3px solid var(--dongker); margin-bottom: 8px; }
+.sheet-head span { color: var(--tinta-2); font-size: .95rem; }
+.bars { width: 100%; border-collapse: collapse; font-size: .95rem; font-variant-numeric: tabular-nums; }
+.bars th, .bars td { text-align: left; padding: 7px 0; border-bottom: 1px solid var(--langit); font-weight: 400; }
+.bars thead th { font-size: .8rem; color: var(--tinta-2); }
+.bars td { width: 46%; }
+.bars .bar { display: inline-block; vertical-align: middle; height: 10px; width: calc(var(--v) * .75); background: var(--dongker); border-radius: 2px; margin-right: 8px; }
+.bars .num { text-align: right; width: 4em; }
+.bars .up { color: var(--hijau); font-weight: 700; } .bars .down { color: var(--merah); font-weight: 700; }
+.sheet-block { margin-top: 18px; }
+.sheet-block h3 { font-size: .95rem; margin-bottom: .35em; color: var(--dongker); }
+.sheet-block p { font-size: .95rem; margin-bottom: .5em; }
+
+/* minggu: urutan sungguhan, jadi boleh bernomor lewat garis waktu */
+.week h2 { max-width: 22ch; }
+.steps { list-style: none; padding: 0; margin: 28px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; counter-reset: s; }
+.steps li { padding: 22px 24px 4px 0; border-top: 3px solid var(--dongker); position: relative; }
+.steps li::before { content: ""; position: absolute; top: -9px; left: 0; width: 15px; height: 15px; border-radius: 50%; background: var(--kapur); border: 3px solid var(--dongker); }
+.steps li:nth-child(2)::before { background: var(--dongker); }
+.steps p { color: var(--tinta-2); max-width: 34ch; }
+
+/* harga */
+.price { display: grid; grid-template-columns: auto 1fr; gap: 12px clamp(28px, 6vw, 80px); align-items: start; border-top: 1px solid var(--garis); }
+.price .amount { font-size: clamp(2.6rem, 6vw, 4rem); font-weight: 800; letter-spacing: -0.03em; color: var(--dongker); margin: 0 0 .1em; font-variant-numeric: tabular-nums; }
+.price .rp { font-size: .45em; vertical-align: .9em; margin-right: .15em; letter-spacing: 0; }
+.price .actions, .price .fine { grid-column: 1 / -1; }
+
+.honest dl { max-width: 70ch; }
+.honest dt { font-weight: 700; margin-top: 1.2em; }
+.honest dd { margin: .3em 0 0; color: var(--tinta-2); }
+
+.foot { border-top: 1px solid var(--garis); padding: 28px clamp(18px, 5vw, 56px) 40px; font-size: .9rem; color: var(--tinta-2); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.foot p { margin: 0; } .foot a { margin-left: 16px; }
+
+@media (max-width: 860px) {
+  .hero, .report, .price { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+  .steps li { border-top: 0; border-left: 3px solid var(--dongker); padding: 0 0 22px 22px; }
+  .steps li::before { top: 2px; left: -9px; }
+  .masthead nav { gap: 14px; font-size: .9rem; }
+}
+@media (max-width: 420px) {
+  .masthead { padding: 14px 16px; }
+  .masthead nav { gap: 12px; font-size: .85rem; }
+  .mark { font-size: 1rem; }
+}
+
+/* ---------- area orang tua ---------- */
+.app { max-width: 760px; margin: 0 auto; padding: 8px clamp(18px, 5vw, 32px) 64px; }
+.app h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); max-width: none; }
+.panel { background: var(--putih); border: 1px solid var(--garis); border-radius: 8px; padding: 22px 24px; margin: 16px 0; }
+.panel.dark { background: var(--dongker); color: var(--putih); border-color: var(--dongker); }
+.panel.dark a { color: var(--putih); }
+.field { margin: 0 0 16px; }
+.field label { display: block; font-weight: 700; margin-bottom: 6px; }
+.field .hint { display: block; font-size: .88rem; color: var(--tinta-2); margin-top: 4px; }
+.field input[type=text], .field input[type=email], .field input[type=tel], .field input[type=password] { width: 100%; min-height: 48px; padding: 10px 12px; font: inherit; border: 2px solid var(--garis); border-radius: 6px; background: var(--putih); }
+.field input[aria-invalid=true] { border-color: var(--merah); }
+.check { display: flex; gap: 10px; align-items: flex-start; }
+.check input { width: 22px; height: 22px; margin-top: 3px; flex: none; }
+.err { color: var(--merah); background: #fbecea; border-radius: 6px; padding: 10px 12px; margin: 10px 0; }
+.ok { color: var(--hijau); }
+.code { font-size: clamp(2rem, 7vw, 2.8rem); font-weight: 800; letter-spacing: .08em; font-variant-numeric: tabular-nums; margin: .2em 0; }
+.list { list-style: none; padding: 0; margin: 0; }
+.list li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--langit); }
+.list li:last-child { border-bottom: 0; }
+.muted { color: var(--tinta-2); }

@@ -28,3 +28,11 @@ Sumber kebenaran kode sejak 2 Nov 2026 = repo ini. Dokumen Drive `impl-build/HAN
 ### 2 Nov — repo GitHub dibuat (Claude)
 - Riwayat kit digabung ke repo ini. Ditambah AGENTS.md, README, CI (GitHub Actions: pytest + Playwright + runner.test.js).
 - BERIKUTNYA: P4 layar orang tua + landing.
+
+### P4 — 2 Nov (Claude)
+- Backend: `IDR["utama"]=499_000`; pesanan memakai harga server (klien diabaikan), 409 `paket_sudah_aktif`, 409 `harga_belum_ditetapkan` untuk kejar. `GET /api/parent/home`. `POST /api/playtest/orders/{ref}/pay` hanya hidup saat PLAYTEST (404 di produksi). Refaktor `_apply_payment` dipakai webhook + playtest.
+- Frontend: landing `public/index.html` + `css/site.css` + `js/landing.js` (kalender 12 akhir pekan menuju 31 Jan sebagai elemen utama; palet seragam SD-SMP; font sistem karena registry font tidak terjangkau dari lingkungan Claude — boleh self-host Plus Jakarta Sans (OFL) nanti). Area orang tua `public/parent/` (daftar dengan validasi per kolom, kode anak tampil sekali + salin, masuk email+PIN, dashboard paket/laporan/tryout, tombol beli + bayar simulasi hanya di playtest; di produksi tertulis "Pembayaran online segera dibuka").
+- Tes: +5 backend, +3 e2e (`test_e2e_parent.py`). Total 113 Python + 6 JS.
+- Deploy uji: `docs/DEPLOY.md` (systemd + Cloudflare Tunnel untuk labschool.doncorleonez.my.id, PLAYTEST=1).
+- Catatan terbuka: keluarga yang daftar lama lalu bayar belakangan tetap memakai `join_window` saat daftar (diagnostik tidak diulang); cek apakah sesuai keinginan pemilik.
+- BERIKUTNYA: P5 gateway (menunggu pilihan pemilik; siapkan adaptor Midtrans Snap + verifikasi signature `sha512(order_id+status_code+gross_amount+server_key)`), atau P6 adaptor email (log-only + Resend), atau sesi drill + Buku Salah kumulatif. Format soal resmi menunggu PDF Pedoman.

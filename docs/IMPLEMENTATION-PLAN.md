@@ -139,14 +139,16 @@ Lingkungan `playtest` (publik, `PLAYTEST=1`, noindex) dan `produksi`. Variabel: 
 
 **Rilis 3 Nov (usulan minimum, butuh persetujuan pemilik):** landing + daftar + diagnostik gratis (P1–P4) dengan bank soal awal dari ChatGPT. Penjualan paket berbayar dibuka setelah gateway dipilih (P5); jendela berbayar pertama Jumat 6 Nov.
 
-## 12. Keputusan yang masih memblokir
-1. Payment gateway (Midtrans/Xendit) dan penyedia email — memblokir penjualan berbayar.
-2. Spesifikasi format tes (jumlah soal, durasi per tryout).
-3. Angka harga per tahap dan tanggal pergantian tahap; persentase diskon kode Prestasi; perlakuan sisa akses setelah lolos Prestasi.
-4. Domain dan host publik.
-5. Penyedia AI runtime final (setelah uji biaya bulk).
-6. Masa simpan data; tinjauan hukum privasi.
-7. Persetujuan cakupan Rilis 3 Nov (§11).
+## 12. Keputusan (status 2 Nov 2026)
+
+Sudah diputuskan pemilik (2 Nov): harga paket utama **Rp499.000**; domain uji **labschool.doncorleonez.my.id**; cakupan Rilis 3 Nov **disetujui** (landing + daftar + diagnostik gratis; jual berbayar menyusul gateway); jumlah soal "sesuai aslinya".
+
+Masih terbuka:
+1. **Jumlah soal dan durasi resmi.** Angkanya ada di Pedoman Jalur Tes 2027 (PDF di psb.labschool-unj.sch.id) yang belum bisa dibaca agen; pemilik perlu melampirkan PDF atau halaman "instrumen tes". Satu sumber sekunder menyebut tes asli memakai CAT (adaptif); bila benar, tryout kita tetap jumlah tetap tetapi itu perlu dicatat jujur di landing. Sampai ada: 40 soal / 120 menit.
+2. **Payment gateway — usulan: Midtrans (Snap).** Tarif publik: VA Rp4.000 flat, QRIS 0,7% (± Rp3.500 untuk Rp499.000), kartu 2,9% + Rp2.000; tanpa biaya pemrosesan tetap tambahan. Xendit setara untuk VA agregator, tapi daftar tarif internasionalnya menambah biaya tetap Rp4.000. Pilihan akhir + akun (butuh verifikasi usaha/perorangan) = pemilik.
+3. **Email transaksional — usulan: Resend.** Gratis 3.000/bulan tetapi **maks 100/hari**; Senin pagi (laporan) menjadi puncak, jadi di atas ±80 keluarga perlu Pro (US$20/bulan, 50.000 email). Butuh domain pengirim yang diverifikasi (mis. mail.doncorleonez.my.id). Kode memakai adaptor sehingga penyedia bisa diganti.
+4. Harga mode kejar (pendaftar setelah 9 Des): belum ada, pesanan kejar ditolak `harga_belum_ditetapkan`. Skema diskon pembeli awal dan persentase kode Prestasi: belum ada angka.
+5. Penyedia AI runtime final (setelah uji biaya bulk). Masa simpan data; tinjauan hukum privasi.
 
 ## 13. QA gate sebelum rilis
 Semua tes lulus terhadap server HTTP nyata · uji penetrasi ringan (URL tryout terkunci, token anak ke endpoint orang tua, ulang webhook, `X-Sim-Time` di produksi) · cek acak 10% bank + semua butir bertanda · konsistensi angka dokumen vs kode · laporan fallback terbit saat AI gagal · simulasi ratusan skenario tanpa pelanggaran invarian. Karena Claude kini juga pelaksana, QA gate dijalankan oleh **agen terpisah yang tidak ikut menulis kode** (atau Muse), bukan menilai pekerjaannya sendiri.
