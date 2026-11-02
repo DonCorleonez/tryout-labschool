@@ -76,7 +76,7 @@ def test_child_full_flow_with_refresh_resume(base, browser):
 
 
 def test_mobile_layout_has_warning_and_no_errors(base, browser):
-    code = _post(base, "/api/parent/register", {"name": "Ibu", "whatsapp": "081234567890", "email": "m@x.co", "consent": True, "pin": "123456"})["child_code"]
+    code = _post(base, "/api/parent/register", {"name": "Ibu", "whatsapp": "081234567891", "email": "m@x.co", "consent": True, "pin": "123456"})["child_code"]
     page = browser.new_page(viewport={"width": 375, "height": 740}); errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(f"{base}/child/?sim={SIM}"); page.fill("#code", code); page.click("button[type=submit]")
@@ -88,7 +88,7 @@ def test_mobile_layout_has_warning_and_no_errors(base, browser):
 
 
 def test_outside_window_shows_closed_message(base, browser):
-    code = _post(base, "/api/parent/register", {"name": "Ibu", "whatsapp": "081234567890", "email": "w@x.co", "consent": True, "pin": "123456"})["child_code"]
+    code = _post(base, "/api/parent/register", {"name": "Ibu", "whatsapp": "081234567892", "email": "w@x.co", "consent": True, "pin": "123456"})["child_code"]
     page = browser.new_page()
     page.goto(f"{base}/child/?sim=2026-11-10T10:00"); page.fill("#code", code); page.click("button[type=submit]")
     page.wait_for_selector(".note")

@@ -63,9 +63,9 @@
   function viewLogin() {
     clockEl.textContent = '';
     render(`<h1>Masuk</h1>
-      <p class="muted">Ketik kode keluarga dari orang tua.</p>
+      <p class="muted">Ketik kode siswa yang diberikan orang tua.</p>
       <form id="f" class="card" autocomplete="off">
-        <label for="code">Kode keluarga</label><br>
+        <label for="code">Kode siswa</label><br>
         <input id="code" type="text" inputmode="text" placeholder="ABCD-1234" maxlength="9" required aria-describedby="e">
         <div id="e" class="err" hidden></div>
         <p><button class="primary" type="submit">Masuk</button></p>

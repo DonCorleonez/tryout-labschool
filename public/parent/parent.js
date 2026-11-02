@@ -18,6 +18,7 @@
     email_atau_pin_salah: 'Email atau PIN tidak cocok.',
     terkunci: 'Terlalu banyak percobaan. Coba lagi dalam 15 menit.',
     akses_dinonaktifkan: 'Akun ini sedang dinonaktifkan. Hubungi kami.',
+    sudah_terdaftar: 'Email atau nomor WhatsApp ini sudah terdaftar. Silakan masuk dengan PIN Anda.',
     paket_sudah_aktif: 'Paket utama sudah aktif.',
     harga_belum_ditetapkan: 'Paket ini belum dibuka.',
   };
@@ -41,7 +42,7 @@
   // ---------- daftar ----------
   function viewRegister() {
     render(`<h1>Daftar dan coba diagnostik gratis</h1>
-      <p class="muted">Satu akun untuk satu anak. Setelah daftar, Anda mendapat kode untuk anak masuk ke ruang tryout.</p>
+      <p class="muted">Satu akun untuk satu siswa. Setelah daftar, Anda mendapat kode siswa untuk anak masuk ke ruang tryout.</p>
       <form id="f" class="panel" novalidate>
         <div class="field"><label for="name">Nama orang tua atau wali</label><input id="name" type="text" autocomplete="name" required></div>
         <div class="field"><label for="whatsapp">Nomor WhatsApp</label><input id="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="08xxxxxxxxxx" required></div>
@@ -63,7 +64,8 @@
           const bad = JSON.parse(r.json.message || '{}');
           Object.keys(bad).forEach((k) => { const el = $('#' + k); if (el) el.setAttribute('aria-invalid', 'true'); });
           err.innerHTML = Object.keys(bad).map((k) => esc(FIELD[k] || k)).join('<br>');
-        } else err.textContent = 'Pendaftaran belum berhasil. Coba lagi.';
+        } else if (r.json && r.json.error === 'sudah_terdaftar') err.innerHTML = 'Email atau nomor WhatsApp ini sudah terdaftar. <a href="#/masuk">Masuk dengan PIN</a>.';
+        else err.textContent = 'Pendaftaran belum berhasil. Coba lagi.';
       } catch (e) { err.textContent = 'Tidak tersambung ke internet. Coba lagi.'; }
       err.hidden = false; btn.disabled = false;
       const first = app.querySelector('[aria-invalid=true]'); if (first) first.focus();
@@ -74,7 +76,7 @@
   function viewCode(code) {
     setNav();
     render(`<h1>Akun dibuat</h1>
-      <div class="panel dark"><p>Kode keluarga untuk anak</p><p class="code" id="code">${esc(code)}</p>
+      <div class="panel dark"><p>Kode siswa untuk anak Anda</p><p class="code" id="code">${esc(code)}</p>
       <p>Kode ini hanya ditampilkan sekali. Catat atau foto sekarang, lalu berikan kepada anak.</p>
       <p><button class="btn line" id="copy" style="color:#fff;border-color:#fff">Salin kode</button></p></div>
       <div class="panel"><h2>Langkah anak</h2><ol><li>Buka <a href="/child/">${esc(location.host)}/child</a> di laptop.</li><li>Masukkan kode di atas.</li><li>Kerjakan diagnostik gratis kapan saja. Hasilnya keluar setelah dikumpulkan.</li></ol></div>
@@ -133,7 +135,7 @@
     render(`<h1>Dashboard</h1>
       <section class="panel"><h2>Paket</h2>${buy}<div id="e" class="err" hidden></div></section>
       <section class="panel"><h2>Laporan terbaru</h2>${report}</section>
-      <section class="panel"><h2>Tryout anak</h2>${atts ? `<ul class="list">${atts}</ul>` : '<p class="muted">Belum ada tryout. Minta anak masuk ke <a href="/child/">ruang anak</a> dengan kode keluarga, lalu kerjakan diagnostik.</p>'}</section>`);
+      <section class="panel"><h2>Tryout anak</h2>${atts ? `<ul class="list">${atts}</ul>` : '<p class="muted">Belum ada tryout. Minta anak masuk ke <a href="/child/">ruang anak</a> dengan kode siswa, lalu kerjakan diagnostik.</p>'}</section>`);
     const err = $('#e');
     const order = $('#order'); if (order) order.onclick = async () => {
       order.disabled = true; const r = await api.post('/api/parent/orders', {});

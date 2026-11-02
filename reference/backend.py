@@ -36,7 +36,9 @@ def check_pin(pin, stored):
     return hmac.compare_digest(hash_pin(pin, salt), stored)
 
 
-_seed = lambda fid, tid: zlib.crc32(f"{fid}:{tid}".encode()) & 0xFFFF   # deterministik antar proses
+DIAG_SEED = 20261106     # KEPUTUSAN PEMILIK 2 Nov: diagnostik = SATU set soal yang sama untuk semua siswa,
+                         # supaya mendaftar ulang dengan akun lain tidak membuka soal baru. Ganti hanya dengan versi bank baru.
+_seed = lambda fid, tid: DIAG_SEED if tid == "DIAG" else zlib.crc32(f"{fid}:{tid}".encode()) & 0xFFFF   # deterministik antar proses
 
 
 class Err(Exception):
@@ -113,6 +115,10 @@ class App:
         if not j.get("consent"): errs["consent"] = "wajib"
         if not re.match(r"^\d{6}$", str(j.get("pin", ""))): errs["pin"] = "6 angka"
         if errs: raise Err(422, "validasi", json.dumps(errs))
+        wa = re.sub(r"[\s-]", "", str(j["whatsapp"])); wa = "0" + wa[3:] if wa.startswith("+62") else ("0" + wa[2:] if wa.startswith("62") else wa)
+        dup = self.db.execute("SELECT 1 FROM marketing_leads WHERE lower(email)=? OR replace(replace(replace(whatsapp,' ',''),'-',''),'+62','0')=? OR whatsapp=?",
+                              (str(j["email"]).strip().lower(), wa, "62" + wa[1:])).fetchone()
+        if dup: raise Err(409, "sudah_terdaftar", "Email atau nomor WhatsApp ini sudah terdaftar. Silakan masuk.")   # satu siswa, satu diagnostik gratis
         code = f"{secrets.token_hex(2).upper()}-{secrets.token_hex(2).upper()}"
         ref = "fam_" + secrets.token_hex(5)
         cur = self.db.execute("INSERT INTO families(public_ref,code_hash,pin_hash,plan,join_window,created_at) VALUES(?,?,?,?,?,?)",

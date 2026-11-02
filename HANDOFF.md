@@ -11,6 +11,9 @@ Sumber kebenaran kode sejak 2 Nov 2026 = repo ini. Dokumen Drive `impl-build/HAN
 - Login orang tua: email + PIN. Diagnostik gratis kapan saja. Analisa AI bulk setelah jendela tutup. Kode diskon Prestasi sekali pakai, boleh diteruskan.
 - Implementasi: Claude (Opus); bank soal: ChatGPT; cadangan: Codex.
 
+- (2 Nov sore) Diagnostik gratis: SATU kali per siswa dan SATU set soal yang sama untuk semua (`backend.DIAG_SEED`), supaya akun ganda tidak membuka soal baru. Email/WA yang sudah terdaftar ditolak (409 `sudah_terdaftar`). Keluarga yang bayar belakangan tidak mengulang diagnostik.
+- (2 Nov sore) Midtrans DITUNDA (jangan kerjakan P5 dulu). UI memakai istilah "siswa"/"anak", bukan "keluarga".
+
 ## Keputusan terbuka (jangan ditebak)
 1. Jumlah soal & durasi per tryout: pemilik minta "sesuai aslinya". Angka resmi ada di Pedoman Jalur Tes 2027 (PDF psb.labschool-unj.sch.id) yang belum bisa dibaca agen; tunggu PDF dilampirkan. Sementara: 40 soal / 120 menit (`bankfile.COMPOSITION`, `backend.TRYOUT_LIMIT_SEC`). Catatan: satu sumber sekunder menyebut tes asli memakai CAT (adaptif) — perlu dicek di pedoman.
 2. Payment gateway: usulan Midtrans (lihat docs/IMPLEMENTATION-PLAN.md §12). Menunggu pilihan + akun pemilik.
@@ -36,3 +39,10 @@ Sumber kebenaran kode sejak 2 Nov 2026 = repo ini. Dokumen Drive `impl-build/HAN
 - Deploy uji: `docs/DEPLOY.md` (systemd + Cloudflare Tunnel untuk labschool.doncorleonez.my.id, PLAYTEST=1).
 - Catatan terbuka: keluarga yang daftar lama lalu bayar belakangan tetap memakai `join_window` saat daftar (diagnostik tidak diulang); cek apakah sesuai keinginan pemilik.
 - BERIKUTNYA: P5 gateway (menunggu pilihan pemilik; siapkan adaptor Midtrans Snap + verifikasi signature `sha512(order_id+status_code+gross_amount+server_key)`), atau P6 adaptor email (log-only + Resend), atau sesi drill + Buku Salah kumulatif. Format soal resmi menunggu PDF Pedoman.
+
+### 2 Nov sore — diagnostik tetap + copy landing (Claude)
+- `DIAG_SEED`: soal diagnostik identik untuk semua siswa; tryout berbayar tetap berbeda per siswa. Cegah daftar ulang dengan email atau WA yang sama (format 08/62/+62 dinormalkan).
+- Landing ditulis ulang dari 6 pain point riset (dokumen konsep bab 3): hero "Jangan tunggu pengumuman...", blok "Yang paling sering dikeluhkan orang tua" (5 kutipan + jawaban), contoh laporan dengan status Mengejar dan tiga aksi, perbandingan dengan biaya les, FAQ privasi. "Kode keluarga" -> "kode siswa" di layar anak dan orang tua.
+- PERHATIAN sebelum penjualan berbayar dibuka: copy menjanjikan pengingat email dan laporan Senin otomatis; keduanya baru nyata setelah P6 (email) dan cron laporan. Jangan buka penjualan sebelum itu.
+- Tes: 118 Python + 6 JS lulus.
+- BERIKUTNYA (Midtrans ditunda): P6 adaptor email (log-only + Resend) dan cron laporan Senin, atau sesi drill + Buku Salah kumulatif.

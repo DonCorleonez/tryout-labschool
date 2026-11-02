@@ -35,9 +35,9 @@ def test_landing_renders_and_links_to_register(browser):
     try:
         page = browser.new_page(viewport={"width": 1366, "height": 900}); errs = _watch(page)
         page.goto(base + "/")
-        assert "499.000" in page.inner_text("#harga")
+        assert "499.000" in page.inner_text("#harga") and "keluarga" not in page.inner_text("body").lower()
         assert page.locator(".weeks li").count() == 13 and page.locator(".weeks li.now").count() <= 1
-        page.click("text=Coba diagnostik gratis"); page.wait_for_selector("text=Daftar dan coba diagnostik gratis")
+        page.click("text=Cek kesiapan anak, gratis"); page.wait_for_selector("text=Daftar dan coba diagnostik gratis")
         assert not errs, errs
     finally:
         s.shutdown()

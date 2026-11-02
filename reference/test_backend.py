@@ -346,3 +346,24 @@ def test_child_token_cannot_use_parent_endpoints(app):
     ct = call(app, "POST", "/api/child/login", {"code": r["child_code"]})[1]["token"]
     assert call(app, "GET", "/api/parent/home", token=ct)[0] == 401
     assert call(app, "POST", "/api/parent/orders", {}, token=ct)[0] == 401
+
+
+# ---------- 2 Nov: diagnostik satu set soal, tidak bisa daftar ulang ----------
+def test_diagnostic_question_set_is_identical_for_everyone(app):
+    sets = []
+    for i in range(3):
+        st, r = call(app, "POST", "/api/parent/register", {"name": "I", "whatsapp": f"08123456789{i}", "email": f"d{i}@x.co", "consent": True, "pin": "123456"})
+        ct = call(app, "POST", "/api/child/login", {"code": r["child_code"]})[1]["token"]
+        sets.append([q["id"] for q in call(app, "POST", "/api/child/tryouts/DIAG/start", token=ct)[1]["questions"]])
+    assert sets[0] == sets[1] == sets[2]
+
+
+def test_paid_tryouts_still_differ_per_student():
+    assert be._seed(1, "TO2-1") != be._seed(2, "TO2-1") and be._seed(1, "DIAG") == be._seed(2, "DIAG")
+
+
+@pytest.mark.parametrize("email,wa", [("SAMA@x.co", "089999999999"), ("lain@x.co", "+62 812-3456-7890"), ("lain2@x.co", "6281234567890")])
+def test_same_email_or_whatsapp_cannot_register_twice(app, email, wa):
+    assert call(app, "POST", "/api/parent/register", {"name": "I", "whatsapp": "081234567890", "email": "sama@x.co", "consent": True, "pin": "123456"})[0] == 200
+    st, e = call(app, "POST", "/api/parent/register", {"name": "I", "whatsapp": wa, "email": email, "consent": True, "pin": "123456"})
+    assert st == 409 and e["error"] == "sudah_terdaftar"

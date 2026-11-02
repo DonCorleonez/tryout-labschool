@@ -49,6 +49,16 @@ main > section { padding: clamp(40px, 7vw, 88px) clamp(18px, 5vw, 56px); max-wid
 .weeks li.test-day time { color: #ffb4ad; }
 .season-note { font-size: .85rem; color: #c5cff0; margin: 0; }
 
+/* keluhan orang tua: kutipan kiri, jawaban kanan */
+.pains h2 { max-width: 24ch; }
+.pain-list { margin: 28px 0 0; }
+.pain-list > div { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 12px clamp(24px, 5vw, 64px); padding: 22px 0; border-top: 1px solid var(--garis); }
+.pain-list dt { font-size: 1.2rem; font-weight: 700; line-height: 1.35; color: var(--dongker); }
+.pain-list dd { margin: 0; color: var(--tinta); max-width: 58ch; }
+.status { margin: 6px 0 4px; font-size: .95rem; }
+.status b { background: var(--langit); color: var(--dongker); padding: 2px 8px; border-radius: 4px; }
+.compare { color: var(--tinta-2); max-width: 54ch; border-left: 3px solid var(--dongker); padding-left: 14px; }
+
 /* contoh laporan */
 .report { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
 .plain { padding-left: 1.1em; margin: 0 0 1em; }
@@ -90,7 +100,7 @@ main > section { padding: clamp(40px, 7vw, 88px) clamp(18px, 5vw, 56px); max-wid
 .foot p { margin: 0; } .foot a { margin-left: 16px; }
 
 @media (max-width: 860px) {
-  .hero, .report, .price { grid-template-columns: 1fr; }
+  .hero, .report, .price, .pain-list > div { grid-template-columns: 1fr; }
   .steps { grid-template-columns: 1fr; }
   .steps li { border-top: 0; border-left: 3px solid var(--dongker); padding: 0 0 22px 22px; }
   .steps li::before { top: 2px; left: -9px; }
