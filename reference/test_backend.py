@@ -206,7 +206,8 @@ def test_webhook_signature_idempotency_and_activation(app):
     assert kinds.count("webhook_paid") == 1 and "request_diterima_server" in kinds and "dikirim_ke_gateway" in kinds
 
 
-def test_order_after_gate_is_kejar_plan(app):
+def test_order_after_gate_is_kejar_plan(app, monkeypatch):
+    monkeypatch.setitem(be.IDR, "kejar", 123)               # harga kejar belum ditetapkan pemilik; nilai uji saja
     r = register(app)
     o, (st, out) = pay(app, r["token"], "2026-12-12T10:00", "e2")
     assert st == 200 and app.db.execute("SELECT plan FROM families").fetchone()["plan"] == "kejar"
@@ -299,3 +300,49 @@ def test_review_with_explanation_only_after_submit_and_idempotent(app):
     assert st == 200 and len(r1["review"]) == len(s["questions"]) and "explanation" in r1["review"][0]
     st, r2 = call(app, "POST", f"/api/child/attempts/{s['attempt']}/submit", {"answers": {"1": 1}}, token=tok, t="2026-11-06T18:31")
     assert r2["idempoten"] and r2["review"] == r1["review"] and r2["score"] == r1["score"]
+
+
+# ---------- P4: harga, dashboard orang tua, bayar simulasi playtest ----------
+def _parent(app, email="p4@x.co"):
+    st, r = call(app, "POST", "/api/parent/register", {"name": "Ibu", "whatsapp": "081234567890", "email": email, "consent": True, "pin": "123456"})
+    return r["token"]
+
+
+def test_order_amount_comes_from_server_price(app):
+    pt = _parent(app)
+    st, o = call(app, "POST", "/api/parent/orders", {"amount_idr": 1}, token=pt)          # harga kiriman klien diabaikan
+    assert st == 200 and o["amount_idr"] == 499_000 and o["plan"] == "utama"
+    assert app.db.execute("SELECT amount_idr FROM orders WHERE public_ref=?", (o["order"],)).fetchone()[0] == 499_000
+
+
+def test_kejar_plan_without_price_is_not_sold(app):
+    pt = _parent(app, "k@x.co")
+    st, e = call(app, "POST", "/api/parent/orders", {}, token=pt, t="2026-12-10T10:00")
+    assert st == 409 and e["error"] == "harga_belum_ditetapkan"
+
+
+def test_parent_home_and_playtest_pay_activates_once(app):
+    pt = _parent(app, "h@x.co")
+    st, h = call(app, "GET", "/api/parent/home", token=pt)
+    assert st == 200 and h["plan"] == "free" and h["offer"]["amount_idr"] == 499_000 and h["playtest"]
+    o = call(app, "POST", "/api/parent/orders", {}, token=pt)[1]
+    assert call(app, "POST", f"/api/playtest/orders/{o['order']}/pay", token=pt)[0] == 200
+    h = call(app, "GET", "/api/parent/home", token=pt)[1]
+    assert h["plan"] == "utama" and h["orders"][0]["status"] == "paid"
+    st, e = call(app, "POST", "/api/parent/orders", {}, token=pt)
+    assert st == 409 and e["error"] == "paket_sudah_aktif"
+
+
+def test_playtest_pay_route_absent_in_production():
+    prod = be.App(playtest=False)
+    st, r = prod.handle("POST", "/api/parent/register", {}, json.dumps({"name": "I", "whatsapp": "081234567890", "email": "z@x.co", "consent": True, "pin": "123456"}).encode())
+    o = prod.handle("POST", "/api/parent/orders", {"X-Token": r["token"]}, b"")[1]
+    st, e = prod.handle("POST", f"/api/playtest/orders/{o['order']}/pay", {"X-Token": r["token"]}, b"")
+    assert st == 404 and prod.db.execute("SELECT plan FROM families").fetchone()[0] == "free"
+
+
+def test_child_token_cannot_use_parent_endpoints(app):
+    st, r = call(app, "POST", "/api/parent/register", {"name": "I", "whatsapp": "081234567890", "email": "c@x.co", "consent": True, "pin": "123456"})
+    ct = call(app, "POST", "/api/child/login", {"code": r["child_code"]})[1]["token"]
+    assert call(app, "GET", "/api/parent/home", token=ct)[0] == 401
+    assert call(app, "POST", "/api/parent/orders", {}, token=ct)[0] == 401

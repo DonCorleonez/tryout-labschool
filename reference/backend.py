@@ -22,7 +22,7 @@ PIN_LOCK_MIN = 15
 PIN_ITER = 120_000
 FREE_DIAG_ANYTIME = True         # kebijakan diagnostik gratis A (kapan saja) / B (hanya di jendela)
 MAX_LOGIN_FAILS = 5              # per IP per 10 menit
-IDR = {"utama": None, "kejar": None}   # harga = keputusan pemilik
+IDR = {"utama": 499_000, "kejar": None}   # harga = keputusan pemilik (2 Nov 2026: paket utama Rp499.000; mode kejar belum ditetapkan)
 
 iso = lambda d: d.isoformat()
 sha = lambda s: hashlib.sha256(s.encode()).hexdigest()
@@ -57,7 +57,8 @@ class App:
             ("POST", r"/api/child/attempts/(?P<ref>att_\w+)/events", self.events), ("POST", r"/api/child/attempts/(?P<ref>att_\w+)/submit", self.submit),
             ("GET", r"/api/child/drills", self.drills), ("POST", r"/api/child/drills/(?P<aid>\d+)/sessions/(?P<n>\d+)/finish", self.drill_finish),
             ("POST", r"/api/parent/orders", self.order_new), ("POST", r"/api/webhooks/payment", self.webhook),
-            ("GET", r"/api/parent/report/latest", self.report_latest),
+            ("GET", r"/api/parent/report/latest", self.report_latest), ("GET", r"/api/parent/home", self.parent_home),
+            ("POST", r"/api/playtest/orders/(?P<oref>ord_\w+)/pay", self.playtest_pay),
             ("GET", r"/api/admin/queue", self.admin_queue), ("POST", r"/api/admin/analysis/standin", self.admin_standin),
             ("GET", r"/api/admin/export.jsonl", self.admin_export), ("POST", r"/api/admin/families/(?P<fref>fam_\w+)/revoke", self.admin_revoke)]]
 
@@ -319,11 +320,42 @@ class App:
     # ---------- pembayaran ----------
     def order_new(self, c):
         s = self._session(c, "parent"); plan = "kejar" if c["now"] >= sc.GATE_PRESTASI else "utama"
+        if s["plan"] in ("utama", "kejar"): raise Err(409, "paket_sudah_aktif")
+        amount = IDR.get(plan)
+        if amount is None: raise Err(409, "harga_belum_ditetapkan", "Paket ini belum dibuka.")    # invarian 14: harga dari server, bukan klien
         ref = "ord_" + secrets.token_hex(4); gw = "SIM-" + secrets.token_hex(3).upper()
-        cur = self.db.execute("INSERT INTO orders(public_ref,family_id,plan,status,gateway,gateway_ref,created_at) VALUES(?,?,?,?,?,?,?)", (ref, s["family_id"], plan, "menunggu", "sim", gw, iso(c["now"])))
+        cur = self.db.execute("INSERT INTO orders(public_ref,family_id,plan,amount_idr,status,gateway,gateway_ref,created_at) VALUES(?,?,?,?,?,?,?,?)", (ref, s["family_id"], plan, amount, "menunggu", "sim", gw, iso(c["now"])))
         for kind, d in (("request_diterima_server", plan), ("dikirim_ke_gateway", gw)):
             self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (cur.lastrowid, kind, d, iso(c["now"])))
-        return {"order": ref, "status": "menunggu", "gateway_ref": gw}
+        return {"order": ref, "status": "menunggu", "gateway_ref": gw, "plan": plan, "amount_idr": amount}
+
+    def _apply_payment(self, o, st, eid, now):
+        if o["status"] != "paid":
+            self.db.execute("UPDATE orders SET status=?, paid_at=? WHERE id=?", (st, iso(now) if st == "paid" else None, o["id"]))
+            self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (o["id"], "webhook_" + st, eid, iso(now)))
+            if st == "paid": self.db.execute("UPDATE families SET plan=? WHERE id=?", (o["plan"], o["family_id"]))
+
+    def playtest_pay(self, c):
+        """HANYA mode playtest: tombol 'bayar simulasi' tanpa gateway. Di produksi rute ini 404."""
+        if not self.playtest: raise Err(404, "tidak_ada")
+        s = self._session(c, "parent")
+        o = self.db.execute("SELECT * FROM orders WHERE public_ref=? AND family_id=?", (c["args"]["oref"], s["family_id"])).fetchone()
+        if not o: raise Err(404, "pesanan_tidak_ada")
+        self._apply_payment(o, "paid", "playtest-" + secrets.token_hex(3), c["now"])
+        return {"ok": True, "status": "paid"}
+
+    def parent_home(self, c):
+        s = self._session(c, "parent"); fid = s["family_id"]; st = sc.clock_state(c["now"])
+        atts = [{"tryout": r["tryout_id"], "window": r["window_k"], "submitted_at": r["submitted_at"],
+                 "pct": json.loads(r["score_json"])["score"]["pct"] if r["score_json"] else None}
+                for r in self.db.execute("SELECT * FROM attempts WHERE family_id=? ORDER BY id", (fid,))]
+        orders = [{"order": r["public_ref"], "status": r["status"], "amount_idr": r["amount_idr"], "created_at": r["created_at"]}
+                  for r in self.db.execute("SELECT * FROM orders WHERE family_id=? ORDER BY id DESC LIMIT 5", (fid,))]
+        offer = "kejar" if c["now"] >= sc.GATE_PRESTASI else "utama"
+        return {"family_ref": s["public_ref"], "plan": s["plan"], "join_window": s["join_window"], "clock": st.kind,
+                "window": st.window.k if st.window else None, "attempts": atts, "orders": orders,
+                "offer": {"plan": offer, "amount_idr": IDR.get(offer), "tryouts": sc.total_for_family(sc.join_window(c["now"]), "utama")},
+                "playtest": self.playtest}
 
     def webhook(self, c):
         sig = c["h"].get("x-signature", ""); ok = hmac.compare_digest(sig, hmac.new(self.secret, c["raw"], hashlib.sha256).hexdigest())
@@ -337,10 +369,7 @@ class App:
         if not o: raise Err(404, "pesanan_tidak_ada")
         st = {"paid": "paid", "failed": "failed", "expired": "expired"}.get(j.get("status"))
         if not st: raise Err(422, "status_tidak_dikenal")
-        if o["status"] != "paid":
-            self.db.execute("UPDATE orders SET status=?, paid_at=? WHERE id=?", (st, iso(c["now"]) if st == "paid" else None, o["id"]))
-            self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (o["id"], "webhook_" + st, eid, iso(c["now"])))
-            if st == "paid": self.db.execute("UPDATE families SET plan=? WHERE id=?", (o["plan"], o["family_id"]))
+        self._apply_payment(o, st, eid, c["now"])
         return {"ok": True, "status": st}
 
     # ---------- admin: antrean analisa (AI belakangan) ----------
