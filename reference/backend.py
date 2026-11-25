@@ -628,6 +628,16 @@ class App:
         self._apply_payment(o, "paid", "playtest-" + secrets.token_hex(3), c["now"])
         return {"ok": True, "status": "paid"}
 
+    def _remaining_offer_tryouts(self, s, now):
+        """Tryout belum dimulai pada jendela yang belum tutup setelah paket aktif."""
+        used = {r["tryout_id"] for r in self.db.execute(
+            "SELECT tryout_id FROM attempts WHERE family_id=?", (s["family_id"],))}
+        return sum(
+            1 for w in sc.WINDOWS if now < w.tryout_close
+            for tid in sc.tryout_ids(s["join_window"], w.k, "utama")
+            if tid not in used
+        )
+
     def parent_home(self, c):
         s = self._session(c, "parent"); fid = s["family_id"]; st = sc.clock_state(c["now"])
         atts = [{"tryout": r["tryout_id"], "window": r["window_k"], "submitted_at": r["submitted_at"],
@@ -638,7 +648,7 @@ class App:
         offer = self._eligible_plan(s)
         return {"family_ref": s["public_ref"], "plan": s["plan"], "join_window": s["join_window"], "clock": st.kind,
                 "window": st.window.k if st.window else None, "attempts": atts, "orders": orders,
-                "offer": {"plan": offer, "amount_idr": IDR.get(offer), "tryouts": sc.total_for_family(s["join_window"] or sc.join_window(c["now"]), "utama")},
+                "offer": {"plan": offer, "amount_idr": IDR.get(offer), "tryouts": self._remaining_offer_tryouts(s, c["now"])},
                 "playtest": self.playtest, "gateway": self.gateway.name}
 
     def parent_reports(self, c):

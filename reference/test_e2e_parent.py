@@ -284,7 +284,7 @@ def test_late_joiner_and_cross_cutoff_order_in_browser(browser):
         p1.goto(base + "/parent/?sim=2026-12-10T10:00#/beranda")
         p1.wait_for_selector("text=Paket utama")
         txt1 = p1.inner_text("main")
-        assert "Paket utama" in txt1 and "Rp99.000" in txt1 and "9 tryout pada jendela tersisa" in txt1
+        assert "Paket utama" in txt1 and "Rp99.000" in txt1 and "9 tryout yang belum dimulai pada jendela tersisa" in txt1
         assert "terdaftar s.d. 8 Des 2026" in txt1
         p1.click("#order"); p1.wait_for_selector("#pay")
         p1.click("#pay"); p1.wait_for_selector("text=Paket utama aktif.")
@@ -297,7 +297,7 @@ def test_late_joiner_and_cross_cutoff_order_in_browser(browser):
         p2.wait_for_selector(".code")
         p2.click("text=Saya sudah mencatat kode"); p2.wait_for_selector("h1:has-text('Dashboard')")
         txt2 = p2.inner_text("main")
-        assert "Paket kejar" in txt2 and "Rp129.000" in txt2 and "9 tryout pada jendela tersisa" in txt2
+        assert "Paket kejar" in txt2 and "Rp129.000" in txt2 and "9 tryout yang belum dimulai pada jendela tersisa" in txt2
         assert "terdaftar mulai 9 Des 2026" in txt2
         p2.click("#order"); p2.wait_for_selector("#pay")
         p2.click("#pay"); p2.wait_for_selector("text=Paket kejar aktif.")
@@ -305,4 +305,28 @@ def test_late_joiner_and_cross_cutoff_order_in_browser(browser):
     finally:
         for p in (p2, p1):
             if p: p.close()
+        s.shutdown(); s.server_close()
+
+
+def test_early_account_late_purchase_shows_remaining_tryouts(browser):
+    s, base = _serve(True)
+    page = browser.new_page(viewport={"width": 375, "height": 812})
+    errs = _watch(page)
+    try:
+        page.goto(base + "/parent/?sim=2026-11-04T10:00#/daftar")
+        page.fill("#name", "Ibu Awal")
+        page.fill("#whatsapp", "081277770009")
+        page.fill("#email", "awal-lambat@contoh.id")
+        page.fill("#pin", "246810")
+        page.check("#consent")
+        page.click("button[type=submit]")
+        page.wait_for_selector(".code")
+        page.goto(base + "/parent/?sim=2026-12-10T10:00#/beranda")
+        page.wait_for_selector("text=Paket utama")
+        text = page.inner_text("main")
+        assert "Rp99.000" in text
+        assert "9 tryout yang belum dimulai pada jendela tersisa" in text
+        assert not errs, errs
+    finally:
+        page.close()
         s.shutdown(); s.server_close()

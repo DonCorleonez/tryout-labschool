@@ -560,3 +560,22 @@ def test_cutoff_determined_by_registration_date_across_8_and_9_dec(app):
     o2, (st_w2, _) = pay(app, r2["token"], "2026-12-09T00:10", "evt-pas")
     assert o2["plan"] == "kejar" and o2["amount_idr"] == 129_000 and st_w2 == 200
     assert app.db.execute("SELECT plan FROM families WHERE public_ref=?", (r2["family_ref"],)).fetchone()["plan"] == "kejar"
+
+
+def test_offer_counts_only_unstarted_tryouts_in_open_or_future_windows(app):
+    r = register(app, "2026-11-04T10:00")
+    token = r["token"]
+    def offer(at):
+        status, home = call(app, "GET", "/api/parent/home", token=token, t=at)
+        assert status == 200
+        return home["offer"]
+
+    assert offer("2026-11-04T10:00")["tryouts"] == 14
+    child_token = child(app, r["child_code"], "2026-11-04T10:00")
+    run_tryout(app, child_token, "DIAG", "2026-11-04T10:00")
+    assert offer("2026-11-04T10:00")["tryouts"] == 13
+    later = offer("2026-12-10T10:00")
+    assert (later["plan"], later["amount_idr"], later["tryouts"]) == ("utama", 99_000, 9)
+    assert offer("2026-12-13T15:59")["tryouts"] == 9
+    assert offer("2026-12-13T16:00")["tryouts"] == 8
+    assert offer("2027-01-24T16:00")["tryouts"] == 0

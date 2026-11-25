@@ -68,3 +68,8 @@ Sumber kebenaran kode sejak 2 Nov 2026 = repo ini. Dokumen Drive `impl-build/HAN
 - `mat_14_psn_bagian` memilih persentase yang menghasilkan jumlah siswa bulat (`tot * p % 100 == 0`); `mat_06_fpb_dua` menjelaskan faktor persekutuan yang membagi kedua bilangan.
 - Regresi memeriksa seluruh kombinasi persentase yang valid dan masing-masing 1.000 seed untuk kedua template (`test_percent_template_all_valid_combinations_and_seed_15` dan `test_fpb_template_hint_and_answers`).
 - Diverifikasi penuh dengan Chromium Playwright tersedia: seluruh **183 tes Python** (termasuk 7 tes E2E browser Playwright), **3.345 checks simulasi**, dan **6 tes JS** lulus sebelum commit ke `feat/neon-redesign-v1` (PR #1 masih menunggu review visual & sertifikasi QA independen).
+
+### 25 Nov — koreksi penawaran jumlah tryout (belum commit)
+- Penawaran menghitung tryout yang belum dimulai pada jendela yang belum tutup, berdasarkan join_window keluarga; tanggal daftar tetap menentukan tarif.
+- Ditambahkan regresi akun daftar awal/pesan terlambat, diagnostik dimulai, batas penutupan jendela, dan E2E mobile.
+- Hasil lokal: 178 pytest lulus, 10 E2E error setup karena executable Chromium tidak tersedia; 6 tes JS lulus. Sebelum commit jalankan seluruh suite dengan Chromium sesuai AGENTS.md.

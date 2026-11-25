@@ -418,12 +418,12 @@
     } else if (h.offer.amount_idr == null) {
       buy = '<p class="muted">Paket untuk pendaftar mulai 9 Desember sedang disiapkan.</p>';
     } else if (h.gateway === 'sim' && !h.playtest) {
-      buy = `<p>${esc(offerName)} <strong>${rp(h.offer.amount_idr)}</strong> untuk ${esc(h.offer.tryouts)} tryout pada jendela tersisa sampai hari tes.</p>
+      buy = `<p>${esc(offerName)} <strong>${rp(h.offer.amount_idr)}</strong> untuk hingga ${esc(h.offer.tryouts)} tryout yang belum dimulai pada jendela tersisa sampai hari tes.</p>
         <p class="muted">${esc(cutoffNote)}</p>
         <p class="muted">Pembayaran online segera dibuka. Diagnostik gratis tetap bisa dikerjakan sekarang.</p>`;
     } else {
       const simTag = h.playtest ? ' <span class="pill sim">Simulasi</span>' : '';
-      const head = `<p>${esc(offerName)} <strong>${rp(h.offer.amount_idr)}</strong>${simTag} untuk ${esc(h.offer.tryouts)} tryout pada jendela tersisa sampai hari tes.</p>
+      const head = `<p>${esc(offerName)} <strong>${rp(h.offer.amount_idr)}</strong>${simTag} untuk hingga ${esc(h.offer.tryouts)} tryout yang belum dimulai pada jendela tersisa sampai hari tes.</p>
         <p class="muted">${esc(cutoffNote)}</p>`;
       if (pending && pending.payment_url) {
         buy = head + `<p class="muted">Ada pesanan yang menunggu pembayaran.</p>
