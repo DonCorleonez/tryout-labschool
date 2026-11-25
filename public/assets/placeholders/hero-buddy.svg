@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" fill="none" role="img" aria-label="Karakter siswa ceria dengan tas dan pensil">
+  <!-- Ground shadow -->
+  <ellipse cx="130" cy="240" rx="74" ry="12" fill="#BAE6FD"/>
+  <!-- Backpack behind -->
+  <rect x="44" y="122" width="52" height="74" rx="14" fill="#FF6B4A" stroke="#172554" stroke-width="5"/>
+  <rect x="52" y="152" width="36" height="32" rx="8" fill="#FFC93C" stroke="#172554" stroke-width="4"/>
+  <!-- Legs / shoes -->
+  <rect x="94" y="196" width="28" height="32" rx="8" fill="#172554"/>
+  <rect x="138" y="196" width="28" height="32" rx="8" fill="#172554"/>
+  <rect x="88" y="216" width="38" height="20" rx="9" fill="#38BDF8" stroke="#172554" stroke-width="4"/>
+  <rect x="134" y="216" width="38" height="20" rx="9" fill="#38BDF8" stroke="#172554" stroke-width="4"/>
+  <!-- Blocky Torso (uniform shirt + sky vest) -->
+  <rect x="78" y="118" width="104" height="84" rx="18" fill="#FFFFFF" stroke="#172554" stroke-width="5"/>
+  <path d="M78 148h104v36c0 9.941-8.059 18-18 18H96c-9.941 0-18-8.059-18-18v-36Z" fill="#38BDF8" stroke="#172554" stroke-width="5"/>
+  <!-- Star pin on chest -->
+  <polygon points="154,158 158,166 167,167 160,173 162,182 154,177 146,182 148,173 141,167 150,166" fill="#FFC93C" stroke="#172554" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Left arm -->
+  <rect x="54" y="128" width="28" height="54" rx="12" fill="#FFE0BD" stroke="#172554" stroke-width="5"/>
+  <!-- Right arm raised holding giant pencil -->
+  <rect x="176" y="110" width="28" height="54" rx="12" transform="rotate(-14 176 110)" fill="#FFE0BD" stroke="#172554" stroke-width="5"/>
+  <!-- Giant blocky pencil -->
+  <g transform="rotate(24 208 98)">
+    <rect x="196" y="34" width="24" height="92" rx="6" fill="#FFC93C" stroke="#172554" stroke-width="4"/>
+    <rect x="196" y="34" width="24" height="18" rx="5" fill="#FF6B4A" stroke="#172554" stroke-width="4"/>
+    <rect x="196" y="50" width="24" height="10" fill="#E2E8F0" stroke="#172554" stroke-width="4"/>
+    <polygon points="196,126 220,126 208,148" fill="#FDE68A" stroke="#172554" stroke-width="4" stroke-linejoin="round"/>
+    <polygon points="203,139 213,139 208,148" fill="#172554"/>
+  </g>
+  <!-- Blocky Head -->
+  <rect x="82" y="32" width="96" height="88" rx="22" fill="#FFE0BD" stroke="#172554" stroke-width="5"/>
+  <!-- Hair / Cap -->
+  <path d="M82 56c0-13.255 10.745-24 24-24h48c13.255 0 24 10.745 24 24v8H82v-8Z" fill="#172554"/>
+  <rect x="94" y="24" width="72" height="22" rx="10" fill="#8B5CF6" stroke="#172554" stroke-width="4"/>
+  <rect x="148" y="38" width="38" height="12" rx="6" fill="#6D28D9" stroke="#172554" stroke-width="4"/>
+  <!-- Cheerful eyes & cheeks -->
+  <rect x="104" y="68" width="12" height="16" rx="6" fill="#172554"/>
+  <rect x="144" y="68" width="12" height="16" rx="6" fill="#172554"/>
+  <circle cx="108" cy="73" r="3" fill="#FFFFFF"/>
+  <circle cx="148" cy="73" r="3" fill="#FFFFFF"/>
+  <circle cx="96" cy="88" r="6" fill="#FDA4AF"/>
+  <circle cx="164" cy="88" r="6" fill="#FDA4AF"/>
+  <!-- Big happy smile -->
+  <path d="M114 91c6 10 26 10 32 0" stroke="#172554" stroke-width="5" stroke-linecap="round"/>
+  <!-- Floating mini blocks -->
+  <rect x="26" y="62" width="22" height="22" rx="6" fill="#58CC02" stroke="#172554" stroke-width="4"/>
+  <rect x="218" y="168" width="24" height="24" rx="6" fill="#FFC93C" stroke="#172554" stroke-width="4"/>
+</svg>

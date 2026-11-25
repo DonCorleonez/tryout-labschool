@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="Gembok akses paket musim">
+  <path d="M40 54V38c0-11.046 8.954-20 20-20s20 8.954 20 20v16" stroke="#172554" stroke-width="14" stroke-linecap="round"/>
+  <path d="M40 54V38c0-11.046 8.954-20 20-20s20 8.954 20 20v16" stroke="#E2E8F0" stroke-width="6" stroke-linecap="round"/>
+  <rect x="24" y="48" width="72" height="54" rx="16" fill="#FFC93C" stroke="#172554" stroke-width="5"/>
+  <rect x="24" y="84" width="72" height="18" rx="10" fill="#D99B00" stroke="#172554" stroke-width="4"/>
+  <polygon points="60,57 63.5,64.5 72,65.5 65.8,71.2 67.4,79.5 60,75.4 52.6,79.5 54.2,71.2 48,65.5 56.5,64.5" fill="#FFFFFF" stroke="#172554" stroke-width="3" stroke-linejoin="round"/>
+</svg>

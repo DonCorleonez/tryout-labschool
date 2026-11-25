@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="Piala level belajar">
+  <rect x="16" y="28" width="22" height="32" rx="10" fill="#D99B00" stroke="#172554" stroke-width="4"/>
+  <rect x="82" y="28" width="22" height="32" rx="10" fill="#D99B00" stroke="#172554" stroke-width="4"/>
+  <rect x="32" y="18" width="56" height="54" rx="14" fill="#FFC93C" stroke="#172554" stroke-width="5"/>
+  <rect x="42" y="26" width="12" height="32" rx="6" fill="#FEF08A"/>
+  <rect x="50" y="72" width="20" height="18" fill="#D99B00" stroke="#172554" stroke-width="4"/>
+  <rect x="32" y="88" width="56" height="18" rx="6" fill="#8B5CF6" stroke="#172554" stroke-width="5"/>
+  <polygon points="60,31 63,39 71,40 65,45 67,53 60,49 53,53 55,45 49,40 57,39" fill="#FFFFFF" stroke="#172554" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>

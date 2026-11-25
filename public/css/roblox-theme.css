@@ -1,0 +1,421 @@
+/* Roblox-style bright blocky/chunky design tokens & shared portal components.
+ * Zero external font CDN dependencies; crisp rounded system-safe fallbacks. */
+:root {
+  /* Core playful palette */
+  --sky: #38BDF8;
+  --sky-deep: #0284C7;
+  --sun: #FFC93C;
+  --sun-deep: #D99B00;
+  --coral: #FF6B4A;
+  --coral-deep: #C9462B;
+  --grass: #58CC02;
+  --grass-deep: #3D9400;
+  --grape: #8B5CF6;
+  --grape-deep: #6D28D9;
+
+  /* Surfaces & text */
+  --bg-bright: #F0F9FF;
+  --paper: #FFFFFF;
+  --cream: #FFFBEB;
+  --ink: #172554;
+  --ink-muted: #475569;
+  --line: #CBD5E1;
+
+  /* Feedback states */
+  --ok: #17734B;
+  --ok-bg: #E2F5EC;
+  --bad: #A8322B;
+  --bad-bg: #FDEAE7;
+  --trap-bg: #FFF3C4;
+  --trap-border: #D99B00;
+
+  /* Radii */
+  --r-s: 12px;
+  --r-m: 20px;
+  --r-l: 24px;
+  --r-pill: 999px;
+
+  /* Typography */
+  --f-display: 'Fredoka', 'Baloo 2', 'Nunito', ui-rounded, 'Segoe UI', system-ui, sans-serif;
+  --f-body: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ---------- Chunky Buttons ---------- */
+.btn,
+.btn-chunky {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 11px 22px;
+  border-radius: 18px;
+  border: 2px solid var(--ink);
+  box-shadow: 0 5px 0 var(--ink);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--paper);
+  color: var(--ink);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
+  user-select: none;
+}
+
+.btn:hover:not(:disabled),
+.btn-chunky:hover:not(:disabled) {
+  filter: brightness(1.03);
+}
+
+.btn:active:not(:disabled),
+.btn-chunky:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.btn:disabled,
+.btn-chunky:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn.solid,
+.btn-chunky.btn-grass {
+  background: var(--grass);
+  color: var(--paper);
+  border-color: var(--grass-deep);
+  box-shadow: 0 5px 0 var(--grass-deep);
+}
+.btn.solid:active:not(:disabled),
+.btn-chunky.btn-grass:active:not(:disabled) {
+  box-shadow: 0 2px 0 var(--grass-deep);
+}
+
+.btn.line {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--sky-deep);
+  box-shadow: 0 5px 0 var(--sky-deep);
+}
+.btn.line:active:not(:disabled) {
+  box-shadow: 0 2px 0 var(--sky-deep);
+}
+
+.btn-sky {
+  background: var(--sky);
+  color: var(--ink);
+  border-color: var(--sky-deep);
+  box-shadow: 0 5px 0 var(--sky-deep);
+}
+.btn-sky:active:not(:disabled) { box-shadow: 0 2px 0 var(--sky-deep); }
+
+.btn-sun {
+  background: var(--sun);
+  color: var(--ink);
+  border-color: var(--sun-deep);
+  box-shadow: 0 5px 0 var(--sun-deep);
+}
+.btn-sun:active:not(:disabled) { box-shadow: 0 2px 0 var(--sun-deep); }
+
+.btn-coral {
+  background: var(--coral);
+  color: var(--paper);
+  border-color: var(--coral-deep);
+  box-shadow: 0 5px 0 var(--coral-deep);
+}
+.btn-coral:active:not(:disabled) { box-shadow: 0 2px 0 var(--coral-deep); }
+
+.btn-grape {
+  background: var(--grape);
+  color: var(--paper);
+  border-color: var(--grape-deep);
+  box-shadow: 0 5px 0 var(--grape-deep);
+}
+.btn-grape:active:not(:disabled) { box-shadow: 0 2px 0 var(--grape-deep); }
+
+/* ---------- Chunky Cards ---------- */
+.card-chunky {
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: var(--r-l);
+  box-shadow: 0 6px 0 var(--line);
+  padding: 24px;
+}
+
+.card-chunky.sky-tint {
+  background: var(--bg-bright);
+  border-color: var(--sky-deep);
+  box-shadow: 0 6px 0 #BAE6FD;
+}
+
+.card-chunky.cream-tint {
+  background: var(--cream);
+  border-color: var(--sun-deep);
+  box-shadow: 0 6px 0 #FDE68A;
+}
+
+/* ---------- Badges & Level Bar ---------- */
+.badge-star,
+.badge-level,
+.badge-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 5px 14px;
+  border-radius: var(--r-pill);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 0.92rem;
+  border: 2px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.badge-star {
+  background: var(--sun);
+  color: var(--ink);
+  border-color: var(--sun-deep);
+  box-shadow: 0 3px 0 var(--sun-deep);
+}
+
+.badge-level {
+  background: var(--grape);
+  color: var(--paper);
+  border-color: var(--grape-deep);
+  box-shadow: 0 3px 0 var(--grape-deep);
+}
+
+.badge-streak {
+  background: var(--coral);
+  color: var(--paper);
+  border-color: var(--coral-deep);
+  box-shadow: 0 3px 0 var(--coral-deep);
+}
+
+.badge-star img,
+.badge-level img,
+.badge-streak img {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+.level-bar {
+  width: 100%;
+  height: 18px;
+  background: #E2E8F0;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  position: relative;
+}
+
+.level-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--grass) 0%, var(--sun) 100%);
+  border-radius: var(--r-pill);
+  transition: width 0.3s ease;
+}
+
+/* ---------- Tab Bar (Tryout / Report / Drill / Buku Salah) ---------- */
+.tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px;
+  background: var(--bg-bright);
+  border: 2px solid var(--line);
+  border-radius: var(--r-m);
+}
+
+.tab-bar a,
+.tab-bar button,
+.tab-bar .tab-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 14px;
+  border: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tab-bar a:hover,
+.tab-bar button:hover,
+.tab-bar .tab-item:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.tab-bar .is-active,
+.tab-bar [aria-selected="true"],
+.tab-bar [aria-current="page"] {
+  background: var(--sky);
+  color: var(--ink);
+  border-color: var(--sky-deep);
+  box-shadow: 0 3px 0 var(--sky-deep);
+}
+
+/* ---------- Feedback Cards & Callouts ---------- */
+.fb-card {
+  border: 3px solid var(--ink);
+  border-radius: var(--r-m);
+  padding: 18px 20px;
+  margin-top: 16px;
+}
+
+.fb-card.ok {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+  color: var(--ink);
+  box-shadow: 0 5px 0 #9CD8BA;
+}
+
+.fb-card.no {
+  background: var(--bad-bg);
+  border-color: var(--bad);
+  color: var(--ink);
+  box-shadow: 0 5px 0 #F2B5AC;
+}
+
+.fb-title {
+  font-family: var(--f-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fb-card.ok .fb-title { color: var(--ok); }
+.fb-card.no .fb-title { color: var(--bad); }
+
+.trap-callout {
+  background: var(--trap-bg);
+  border: 3px solid var(--trap-border);
+  border-radius: var(--r-m);
+  padding: 14px 18px;
+  margin-top: 14px;
+  color: var(--ink);
+  box-shadow: 0 4px 0 #FCD34D;
+}
+
+.trap-callout .callout-tag,
+.shortcut-callout .callout-tag {
+  display: inline-block;
+  font-family: var(--f-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  margin-bottom: 6px;
+}
+
+.trap-callout .callout-tag {
+  background: var(--sun);
+  color: var(--ink);
+  border: 2px solid var(--trap-border);
+}
+
+.shortcut-callout {
+  background: #EEF2FF;
+  border: 3px solid var(--grape);
+  border-radius: var(--r-m);
+  padding: 14px 18px;
+  margin-top: 14px;
+  color: var(--ink);
+  box-shadow: 0 4px 0 #C4B5FD;
+}
+
+.shortcut-callout .callout-tag {
+  background: var(--grape);
+  color: var(--paper);
+  border: 2px solid var(--grape-deep);
+}
+
+/* ---------- Season Map Shell ---------- */
+.season-map {
+  background: linear-gradient(180deg, #E0F2FE 0%, #FFFFFF 100%);
+  border: 3px solid var(--sky-deep);
+  border-radius: var(--r-l);
+  box-shadow: 0 7px 0 var(--sky-deep);
+  padding: 22px 22px 18px;
+  color: var(--ink);
+}
+
+/* ---------- Unified Paywall Modal ---------- */
+.paywall-modal[hidden] {
+  display: none;
+}
+
+.paywall-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.paywall-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(23, 37, 84, 0.58);
+}
+
+.paywall-dialog {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: var(--r-l);
+  box-shadow: 0 8px 0 var(--ink);
+  padding: 26px 24px 24px;
+}
+
+.paywall-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--r-s);
+  border: 2px solid var(--line);
+  background: var(--bg-bright);
+  color: var(--ink);
+  font-family: var(--f-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.paywall-close:hover {
+  border-color: var(--ink);
+  background: var(--sun);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .btn-chunky,
+  .level-bar-fill {
+    transition: none;
+  }
+}

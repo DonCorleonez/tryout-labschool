@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="Ikon Buku Salah">
+  <rect x="24" y="18" width="74" height="84" rx="14" fill="#FF6B4A" stroke="#172554" stroke-width="5"/>
+  <rect x="24" y="18" width="18" height="84" rx="8" fill="#C9462B" stroke="#172554" stroke-width="4"/>
+  <rect x="48" y="30" width="38" height="28" rx="8" fill="#FFC93C" stroke="#172554" stroke-width="4"/>
+  <path d="M56 44l7 7 15-15" stroke="#172554" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="50" y="68" width="34" height="8" rx="4" fill="#FFFFFF"/>
+  <rect x="50" y="82" width="24" height="8" rx="4" fill="#FFFFFF"/>
+</svg>

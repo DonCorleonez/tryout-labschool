@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="Ikon mata uji Pemahaman Bacaan">
+  <rect x="14" y="14" width="92" height="92" rx="22" fill="#58CC02" stroke="#172554" stroke-width="5"/>
+  <rect x="24" y="30" width="36" height="58" rx="8" fill="#FFFFFF" stroke="#172554" stroke-width="4"/>
+  <rect x="60" y="30" width="36" height="58" rx="8" fill="#FFFBEB" stroke="#172554" stroke-width="4"/>
+  <path d="M32 44h20M32 56h20M32 68h14" stroke="#172554" stroke-width="4" stroke-linecap="round"/>
+  <path d="M68 44h20M68 56h20M68 68h14" stroke="#0284C7" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="84" cy="76" r="14" fill="#FFC93C" stroke="#172554" stroke-width="4"/>
+  <path d="M94 86l10 10" stroke="#172554" stroke-width="6" stroke-linecap="round"/>
+</svg>

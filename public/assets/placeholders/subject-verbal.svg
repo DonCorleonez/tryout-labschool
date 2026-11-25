@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="Ikon mata uji Verbal">
+  <rect x="14" y="14" width="92" height="92" rx="22" fill="#8B5CF6" stroke="#172554" stroke-width="5"/>
+  <rect x="24" y="28" width="54" height="36" rx="12" fill="#FFFFFF" stroke="#172554" stroke-width="4"/>
+  <polygon points="34,64 46,64 36,76" fill="#FFFFFF" stroke="#172554" stroke-width="4" stroke-linejoin="round"/>
+  <rect x="46" y="58" width="50" height="32" rx="12" fill="#FFC93C" stroke="#172554" stroke-width="4"/>
+  <path d="M38 49l6-14 6 14M40 45h8" stroke="#172554" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="57" y="42" width="12" height="4" rx="2" fill="#8B5CF6"/>
+  <circle cx="62" cy="74" r="3.5" fill="#172554"/>
+  <circle cx="72" cy="74" r="3.5" fill="#172554"/>
+  <circle cx="82" cy="74" r="3.5" fill="#172554"/>
+</svg>
