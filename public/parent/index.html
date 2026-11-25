@@ -4,11 +4,518 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Orang tua — Tryout Labschool</title>
+<title>Portal Orang Tua — Tryout Labschool</title>
+<link rel="stylesheet" href="/css/roblox-theme.css">
 <link rel="stylesheet" href="/css/site.css">
+<style>
+  :root {
+    --rbx-sky: #38BDF8;
+    --rbx-sky-dark: #0284C7;
+    --rbx-sun: #FFC93C;
+    --rbx-sun-dark: #D97706;
+    --rbx-coral: #FF6B4A;
+    --rbx-coral-dark: #C2410C;
+    --rbx-grass: #58CC02;
+    --rbx-grass-dark: #3F9102;
+    --rbx-grape: #8B5CF6;
+    --rbx-grape-dark: #6D28D9;
+    --rbx-ink: #1E293B;
+    --rbx-muted: #475569;
+    --rbx-border: #CBD5E1;
+    --rbx-bg: #F0F9FF;
+    --rbx-card: #FFFFFF;
+    --rbx-font-head: 'Fredoka', 'Nunito', 'Quicksand', 'Trebuchet MS', system-ui, -apple-system, sans-serif;
+    --rbx-font-body: 'Nunito', 'Quicksand', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  body.site.parent-portal {
+    background: var(--rbx-bg);
+    color: var(--rbx-ink);
+    font-family: var(--rbx-font-body);
+    line-height: 1.6;
+  }
+
+  .parent-portal h1,
+  .parent-portal h2,
+  .parent-portal h3 {
+    font-family: var(--rbx-font-head);
+    color: var(--rbx-ink);
+  }
+
+  .parent-portal .masthead {
+    background: var(--rbx-card);
+    border-bottom: 3px solid var(--rbx-border);
+    box-shadow: 0 4px 0 rgba(15, 23, 42, 0.06);
+  }
+
+  .parent-portal .mark {
+    font-family: var(--rbx-font-head);
+    color: var(--rbx-sky-dark);
+    font-weight: 800;
+    font-size: 1.2rem;
+  }
+
+  .parent-portal .masthead nav a {
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    color: var(--rbx-ink);
+  }
+
+  .parent-portal .masthead nav a:hover {
+    text-decoration: none;
+    background: #E0F2FE;
+    border-color: var(--rbx-sky);
+  }
+
+  .parent-portal .app {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px clamp(16px, 4vw, 32px) 72px;
+  }
+
+  .parent-portal .panel {
+    background: var(--rbx-card);
+    border: 3px solid var(--rbx-border);
+    border-radius: 20px;
+    padding: 22px 24px;
+    margin: 18px 0;
+    box-shadow: 0 5px 0 var(--rbx-border);
+  }
+
+  .parent-portal .panel.dark {
+    background: var(--rbx-sky-dark);
+    border-color: #075985;
+    box-shadow: 0 5px 0 #075985;
+    color: #FFFFFF;
+  }
+
+  .parent-portal .panel.dark h2,
+  .parent-portal .panel.dark p,
+  .parent-portal .panel.dark a {
+    color: #FFFFFF;
+  }
+
+  .parent-portal .panel.accent-sun {
+    background: #FFFBEB;
+    border-color: var(--rbx-sun-dark);
+    box-shadow: 0 5px 0 var(--rbx-sun-dark);
+  }
+
+  .parent-portal .panel.accent-grape {
+    background: #F5F3FF;
+    border-color: var(--rbx-grape);
+    box-shadow: 0 5px 0 var(--rbx-grape-dark);
+  }
+
+  .parent-portal .btn {
+    border-radius: 14px;
+    border: 3px solid var(--rbx-sky-dark);
+    font-family: var(--rbx-font-head);
+    font-weight: 700;
+    min-height: 46px;
+    padding: 10px 20px;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+
+  .parent-portal .btn.solid {
+    background: var(--rbx-grass);
+    border-color: var(--rbx-grass-dark);
+    color: #FFFFFF;
+    box-shadow: 0 5px 0 var(--rbx-grass-dark);
+  }
+
+  .parent-portal .btn.solid:hover {
+    background: #4EB802;
+  }
+
+  .parent-portal .btn.solid:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 var(--rbx-grass-dark);
+  }
+
+  .parent-portal .btn.sky {
+    background: var(--rbx-sky);
+    border-color: var(--rbx-sky-dark);
+    color: #082F49;
+    box-shadow: 0 5px 0 var(--rbx-sky-dark);
+  }
+
+  .parent-portal .btn.sky:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 var(--rbx-sky-dark);
+  }
+
+  .parent-portal .btn.line {
+    background: #FFFFFF;
+    border-color: var(--rbx-border);
+    color: var(--rbx-ink);
+    box-shadow: 0 4px 0 var(--rbx-border);
+  }
+
+  .parent-portal .btn.line:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--rbx-border);
+  }
+
+  .parent-portal .btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  .parent-portal .field input[type=text],
+  .parent-portal .field input[type=email],
+  .parent-portal .field input[type=tel],
+  .parent-portal .field input[type=password],
+  .parent-portal .field select {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 14px;
+    font: inherit;
+    color: var(--rbx-ink);
+    border: 3px solid var(--rbx-border);
+    border-radius: 12px;
+    background: #FFFFFF;
+  }
+
+  .parent-portal .field input[aria-invalid=true],
+  .parent-portal .field select[aria-invalid=true] {
+    border-color: var(--rbx-coral-dark);
+    background: #FFF5F2;
+  }
+
+  .parent-portal .err {
+    background: #FFF1F0;
+    color: var(--rbx-coral-dark);
+    border: 2px solid var(--rbx-coral);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-weight: 700;
+  }
+
+  .parent-portal .ok-box {
+    background: #ECFCCB;
+    color: #276702;
+    border: 2px solid var(--rbx-grass);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-weight: 700;
+  }
+
+  .code-badge-sub {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.16);
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+  }
+
+  /* Sub-nav tabs */
+  .sub-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 14px 0 20px;
+  }
+
+  .tab-btn {
+    cursor: pointer;
+    font-family: var(--rbx-font-head);
+    font-weight: 700;
+    font-size: 0.98rem;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 3px solid var(--rbx-border);
+    background: #FFFFFF;
+    color: var(--rbx-ink);
+    box-shadow: 0 4px 0 var(--rbx-border);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+
+  .tab-btn[aria-selected="true"] {
+    background: var(--rbx-sun);
+    border-color: var(--rbx-sun-dark);
+    box-shadow: 0 4px 0 var(--rbx-sun-dark);
+    color: #451A03;
+  }
+
+  .tab-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--rbx-border);
+  }
+
+  /* Badges & Pills */
+  .pill {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-family: var(--rbx-font-head);
+    font-weight: 700;
+    font-size: 0.92rem;
+    border: 2px solid transparent;
+  }
+
+  .pill.siap { background: #DCFCE7; color: #166534; border-color: var(--rbx-grass); }
+  .pill.mengejar { background: #FEF3C7; color: #92400E; border-color: var(--rbx-sun-dark); }
+  .pill.belum { background: #FFE4E6; color: #9F1239; border-color: var(--rbx-coral); }
+  .pill.sim { background: #F1F5F9; color: var(--rbx-muted); border-color: var(--rbx-border); font-size: 0.8rem; }
+
+  .disclaimer-box {
+    background: #F8FAFC;
+    border: 2px dashed var(--rbx-border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    color: var(--rbx-muted);
+    margin-top: 10px;
+  }
+
+  /* Effort grid */
+  .effort-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin: 16px 0;
+  }
+
+  .effort-card {
+    background: #F8FAFC;
+    border: 3px solid var(--rbx-border);
+    border-radius: 16px;
+    padding: 14px 16px;
+  }
+
+  .effort-card .label {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--rbx-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .effort-card .val {
+    font-family: var(--rbx-font-head);
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: var(--rbx-ink);
+    margin: 4px 0;
+  }
+
+  .effort-card .sub {
+    font-size: 0.88rem;
+    color: var(--rbx-muted);
+    margin: 0;
+  }
+
+  /* Trend bars */
+  .bar-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 190px) 1fr 78px;
+    gap: 10px;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid #E2E8F0;
+    font-size: 0.95rem;
+  }
+
+  .bar-row:last-child { border-bottom: 0; }
+
+  .bar-track {
+    height: 16px;
+    background: #E2E8F0;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 2px solid #CBD5E1;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--rbx-sky);
+  }
+
+  .bar-fill.good { background: var(--rbx-grass); }
+  .bar-fill.mid { background: var(--rbx-sun); }
+  .bar-fill.low { background: var(--rbx-coral); }
+
+  .bar-num {
+    text-align: right;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 2x2 Matrix */
+  .matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .matrix-cell {
+    border: 3px solid var(--rbx-border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: #F8FAFC;
+    font-size: 0.92rem;
+  }
+
+  .matrix-cell.active {
+    background: #FEF9C3;
+    border-color: var(--rbx-sun-dark);
+    box-shadow: 0 4px 0 var(--rbx-sun-dark);
+  }
+
+  .matrix-cell strong {
+    display: block;
+    font-family: var(--rbx-font-head);
+    margin-bottom: 4px;
+  }
+
+  /* Tables & Buku Salah Cards */
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+
+  .report-table th,
+  .report-table td {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 2px solid #E2E8F0;
+    vertical-align: top;
+  }
+
+  .report-table th {
+    font-family: var(--rbx-font-head);
+    color: var(--rbx-muted);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+  }
+
+  .buku-card {
+    background: #FFFFFF;
+    border: 3px solid var(--rbx-border);
+    border-radius: 18px;
+    padding: 18px 20px;
+    margin: 14px 0;
+    box-shadow: 0 4px 0 var(--rbx-border);
+  }
+
+  .buku-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .buku-opts {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+    display: grid;
+    gap: 6px;
+  }
+
+  .buku-opts li {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 2px solid #E2E8F0;
+    background: #F8FAFC;
+  }
+
+  .buku-opts li.opt-chosen {
+    border-color: var(--rbx-coral);
+    background: #FFF1F0;
+    font-weight: 700;
+  }
+
+  .buku-opts li.opt-correct {
+    border-color: var(--rbx-grass);
+    background: #ECFCCB;
+    font-weight: 700;
+  }
+
+  .shortcut-box {
+    background: #EFF6FF;
+    border-left: 5px solid var(--rbx-sky-dark);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    font-size: 0.93rem;
+  }
+
+  .head-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .discount-code {
+    display: inline-block;
+    font-family: var(--rbx-font-head);
+    font-size: 1.5rem;
+    letter-spacing: 0.06em;
+    background: #FFFFFF;
+    border: 3px solid var(--rbx-grape-dark);
+    border-radius: 12px;
+    padding: 6px 14px;
+    color: var(--rbx-grape-dark);
+  }
+
+  @media (max-width: 720px) {
+    .effort-grid,
+    .matrix-grid {
+      grid-template-columns: 1fr;
+    }
+    .bar-row {
+      grid-template-columns: 1fr 64px;
+    }
+    .bar-row .bar-track {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media print {
+    body.site.parent-portal {
+      background: #FFFFFF;
+      color: #000000;
+    }
+    .no-print,
+    .masthead,
+    .sub-tabs {
+      display: none !important;
+    }
+    .parent-portal .app {
+      max-width: 100%;
+      padding: 0;
+    }
+    .parent-portal .panel,
+    .buku-card,
+    .effort-card,
+    .matrix-cell {
+      box-shadow: none !important;
+      border-width: 1px !important;
+      border-color: #94A3B8 !important;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+  }
+</style>
 </head>
-<body class="site">
-<header class="masthead">
+<body class="site parent-portal">
+<header class="masthead no-print">
   <a class="mark" href="/">Tryout Labschool</a>
   <nav aria-label="Akun" id="nav"></nav>
 </header>
