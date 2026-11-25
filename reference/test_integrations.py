@@ -21,7 +21,7 @@ def sig(amount, order):
     return hmac.new(KEY.encode(), (MC + str(amount) + order).encode(), hashlib.sha256).hexdigest()
 
 
-def cb_form(order, amount=499000, result="00", ref="DS1234526XYZ", signature=None):
+def cb_form(order, amount=99000, result="00", ref="DS1234526XYZ", signature=None):
     return urlencode({"merchantCode": MC, "amount": str(amount), "merchantOrderId": order, "resultCode": result, "reference": ref,
                       "signature": signature or sig(amount, order), "paymentCode": "SP"}).encode()
 
@@ -29,11 +29,11 @@ def cb_form(order, amount=499000, result="00", ref="DS1234526XYZ", signature=Non
 def test_create_invoice_signature_and_body():
     calls = []
     g = ig.DuitkuGateway(MC, KEY, sandbox=True, http=fake_http(calls), clock=lambda: 1773728479616)
-    out = g.create_invoice("ord_1", 499000, "a@b.co", "Paket", "https://x/cb", "https://x/ret")
+    out = g.create_invoice("ord_1", 99000, "a@b.co", "Paket", "https://x/cb", "https://x/ret")
     url, body, h = calls[0]
     assert url == "https://api-sandbox.duitku.com/api/merchant/createInvoice"
     assert h["x-duitku-signature"] == hmac.new(KEY.encode(), (MC + "1773728479616").encode(), hashlib.sha256).hexdigest()
-    assert body["paymentAmount"] == 499000 and body["merchantOrderId"] == "ord_1" and out["payment_url"].startswith("https://")
+    assert body["paymentAmount"] == 99000 and body["merchantOrderId"] == "ord_1" and out["payment_url"].startswith("https://")
 
 
 def test_production_base_url():
@@ -73,7 +73,7 @@ def _cb(app, body):
 def test_full_flow_order_callback_activation_email(app):
     tok = _parent(app)
     st, o = app.handle("POST", "/api/parent/orders", {"X-Token": tok}, b"{}")
-    assert st == 200 and o["payment_url"] == "https://sandbox.duitku.com/pay/abc" and o["amount_idr"] == 499000
+    assert st == 200 and o["payment_url"] == "https://sandbox.duitku.com/pay/abc" and o["amount_idr"] == 99000
     assert app._calls[0][1]["callbackUrl"] == "https://labschool.doncorleonez.my.id/api/webhooks/duitku"
     st, again = app.handle("POST", "/api/parent/orders", {"X-Token": tok}, b"{}")            # klik ganda: invoice sama, tidak buat baru
     assert again["order"] == o["order"] and len(app._calls) == 1

@@ -1,0 +1,954 @@
+[
+  {
+    "ans": 1,
+    "cara_cepat": "Uji kata dengan KBBI; bunyi yang mirip belum tentu baku.",
+    "id": "bi-kb-01",
+    "level": 1,
+    "opts": [
+      "Apotik",
+      "Apotek",
+      "Apotiq",
+      "Apotekk"
+    ],
+    "penjelasan": "Bentuk baku yang benar adalah 'apotek', tempat menjual obat.",
+    "q": "Kata baku dari 'apotik' adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Kata Baku",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Uji kata dengan KBBI; bunyi yang mirip belum tentu baku.",
+    "id": "bi-kb-02",
+    "level": 1,
+    "opts": [
+      "Praktek",
+      "Praktik",
+      "Praketik",
+      "Pratik"
+    ],
+    "penjelasan": "Bentuk baku yang benar adalah 'praktik', bukan 'praktek'.",
+    "q": "Kata baku dari 'praktek' adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Kata Baku",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Uji kata dengan KBBI; perhatikan huruf v, bukan f, pada kata serapan ini.",
+    "id": "bi-kb-03",
+    "level": 2,
+    "opts": [
+      "Kreatifitas",
+      "Kreativitas",
+      "Kreatipitas",
+      "Kreativiti"
+    ],
+    "penjelasan": "Bentuk baku yang benar adalah 'kreativitas', dari kata dasar 'kreatif' + akhiran '-itas' dengan penyesuaian ejaan.",
+    "q": "Kata baku dari 'kreatifitas' adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Kata Baku",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Uji kata dengan KBBI; kata kerja ini berakhiran -tre, bukan -tri.",
+    "id": "bi-kb-04",
+    "level": 1,
+    "opts": [
+      "Antri",
+      "Antre",
+      "Antrian",
+      "Antree"
+    ],
+    "penjelasan": "Bentuk baku kata kerja 'antri' adalah 'antre'.",
+    "q": "Kata baku dari 'antri' adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Kata Baku",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Koma menempel ke kiri, spasi ke kanan.",
+    "id": "bi-tb-01",
+    "level": 1,
+    "opts": [
+      "Ibu membeli beras, gula, dan minyak di pasar.",
+      "Ibu membeli beras ,gula, dan minyak di pasar.",
+      "Ibu membeli, beras gula dan minyak di pasar.",
+      "Ibu membeli beras gula, dan minyak, di pasar."
+    ],
+    "penjelasan": "Koma ditulis menempel pada kata sebelumnya, lalu spasi, dan dipakai untuk memisahkan rincian.",
+    "q": "Kalimat berikut yang penulisan komanya paling tepat adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Tanda Baca",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Titik menutup kalimat; tanggal ditulis tanpa titik di tengahnya.",
+    "id": "bi-tb-02",
+    "level": 1,
+    "opts": [
+      "Andi lahir pada 12 Mei 2015.",
+      "Andi lahir pada 12. Mei 2015.",
+      "Andi lahir pada 12 Mei. 2015.",
+      "Andi lahir. pada 12 Mei 2015."
+    ],
+    "penjelasan": "Titik hanya dipakai di akhir kalimat, bukan di tengah tanggal.",
+    "q": "Kalimat berikut yang penulisan titiknya paling tepat adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Tanda Baca",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Ada kata tanya dan nada bertanya, tutup dengan tanda tanya.",
+    "id": "bi-tb-03",
+    "level": 1,
+    "opts": [
+      "Kapan ayah pulang?",
+      "Kapan ayah pulang.",
+      "Kapan, ayah pulang?",
+      "Kapan ayah pulang!"
+    ],
+    "penjelasan": "Kalimat tanya diakhiri tanda tanya, bukan titik atau tanda seru.",
+    "q": "Kalimat tanya yang penulisannya paling tepat adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Tanda Baca",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Kapital untuk awal kalimat, nama orang, nama tempat, dan nama hari.",
+    "id": "bi-tb-04",
+    "level": 2,
+    "opts": [
+      "Budi dan Sinta pergi ke Jakarta pada hari Senin.",
+      "budi dan Sinta pergi ke Jakarta pada hari Senin.",
+      "Budi dan sinta pergi ke jakarta pada hari Senin.",
+      "Budi dan Sinta pergi ke Jakarta pada hari Senin"
+    ],
+    "penjelasan": "Awal kalimat, nama orang, nama kota, dan nama hari ditulis dengan huruf kapital; kalimat juga ditutup titik.",
+    "q": "Kalimat berikut yang penulisan huruf kapital dan tanda titiknya paling tepat adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Tanda Baca",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Cari satu kalimat yang merangkum semua kalimat lain, bukan satu rincian saja.",
+    "id": "bi-gu-01",
+    "level": 1,
+    "opts": [
+      "Cara merawat tanaman agar tumbuh subur.",
+      "Pak Rudi bangun setiap pagi.",
+      "Daun kering harus dibuang.",
+      "Bunga yang lebat terlihat indah."
+    ],
+    "penjelasan": "Semua kalimat menjelaskan perawatan tanaman dan hasilnya, jadi gagasan utamanya adalah cara merawat tanaman agar tumbuh subur.",
+    "q": "Pak Rudi memiliki beberapa tanaman bunga dan sayuran di halaman rumahnya. Setiap pagi, ia memeriksa kondisi tanah sebelum menyiram. Jika tanah masih lembap karena hujan, ia mengurangi jumlah air agar akar tidak membusuk. Sebaliknya, ketika cuaca panas dan tanah tampak kering, ia menyiram secukupnya hingga air meresap. Seminggu sekali, Pak Rudi memberi pupuk sesuai kebutuhan tanaman. Ia juga memungut daun yang kering supaya bagian tanaman yang sehat mendapat cukup cahaya. Tanaman dalam pot dipindahkan jika tempatnya terlalu teduh, tetapi tidak semua tanaman diletakkan di bawah matahari sepanjang hari. Pak Rudi memperhatikan daun yang berlubang dan membersihkannya dari ulat dengan hati-hati. Setelah beberapa minggu, tanaman yang dirawatnya tumbuh subur dan bunganya semakin lebat. Tetangga yang melihat halaman itu bertanya bagaimana ia merawat tanaman. Pak Rudi menjelaskan bahwa setiap tanaman perlu diperhatikan secara teratur, mulai dari kebutuhan air, pupuk, cahaya, hingga kebersihan daunnya. Gagasan utama paragraf tersebut adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Gagasan Utama",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Cari satu kalimat yang merangkum semua kalimat lain, bukan satu rincian saja.",
+    "id": "bi-gu-02",
+    "level": 2,
+    "opts": [
+      "Bahaya membuang sampah plastik ke sungai.",
+      "Hujan deras menyebabkan banjir.",
+      "Warga diajak kerja bakti.",
+      "Sungai perlu dibersihkan setiap hari."
+    ],
+    "penjelasan": "Paragraf ini menjelaskan akibat membuang sampah ke sungai dan ajakan untuk tidak melakukannya.",
+    "q": "Sampah plastik yang dibuang ke sungai dapat menimbulkan masalah bagi lingkungan dan warga di sekitarnya. Kantong, botol, dan bungkus makanan yang terbawa arus sering tersangkut di bawah jembatan atau di sela saluran air. Lama-kelamaan, tumpukan itu menghambat aliran sungai. Ketika hujan deras turun, air lebih mudah meluap dan membanjiri jalan serta rumah warga. Selain menyebabkan genangan, sampah plastik dapat terbawa lebih jauh dan mengganggu hewan yang hidup di air. Sebagian hewan dapat terjerat atau mengira potongan plastik sebagai makanan. Air sungai yang kotor juga menyulitkan warga yang memanfaatkannya untuk kegiatan sehari-hari. Untuk mengurangi masalah tersebut, warga diajak membuang sampah pada tempatnya dan memilah plastik yang masih dapat didaur ulang. Mereka juga bekerja sama membersihkan saluran di sekitar rumah. Kebiasaan menjaga sungai perlu dilakukan terus-menerus agar sampah tidak kembali menumpuk dan aliran air tetap lancar. Gagasan utama paragraf tersebut adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Gagasan Utama",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Cari satu kalimat yang merangkum semua kalimat lain, bukan satu rincian saja.",
+    "id": "bi-gu-03",
+    "level": 1,
+    "opts": [
+      "Latihan tekun membuat Rani semakin luwes menari.",
+      "Rani suka makan makanan sehat.",
+      "Menari dilakukan tiga kali seminggu.",
+      "Istirahat cukup itu penting."
+    ],
+    "penjelasan": "Semua kalimat mengarah pada satu hal: latihan yang tekun membuat tarian Rani semakin baik.",
+    "q": "Rani ingin tampil lebih baik dalam pertunjukan tari di sekolah. Ia berlatih tiga kali seminggu bersama teman-temannya di aula. Pada awalnya, Rani sering terlambat mengikuti irama dan kesulitan mengingat urutan gerakan. Pelatih lalu membagi tarian menjadi beberapa bagian agar lebih mudah dipelajari. Rani mengulang gerakan yang belum dikuasainya secara perlahan, kemudian menyesuaikannya dengan musik. Saat tidak mengerti, ia bertanya kepada pelatih dan memperhatikan contoh yang diberikan. Di rumah, ia sesekali berlatih di tempat yang cukup luas supaya dapat bergerak dengan aman. Rani juga menjaga pola makan dan beristirahat cukup agar tubuhnya siap berlatih. Setelah beberapa minggu, ia mulai dapat mengikuti irama dan berpindah gerakan dengan lebih lancar. Pelatih melihat gerakannya semakin luwes ketika latihan bersama. Rani senang karena usahanya membawa perubahan. Pengalaman itu membuatnya memahami bahwa keterampilan menari dapat berkembang melalui latihan yang teratur, tekun, dan disertai perhatian pada kondisi tubuh. Gagasan utama paragraf tersebut adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Gagasan Utama",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Cari satu kalimat yang merangkum semua kalimat lain, bukan satu rincian saja.",
+    "id": "bi-gu-04",
+    "level": 2,
+    "opts": [
+      "Aturan peminjaman buku di perpustakaan sekolah.",
+      "Ensiklopedia berisi banyak pengetahuan.",
+      "Petugas perpustakaan sangat sibuk.",
+      "Siswa suka membaca buku cerita."
+    ],
+    "penjelasan": "Paragraf ini menjelaskan bagaimana peminjaman buku di perpustakaan diatur.",
+    "q": "Perpustakaan sekolah menyediakan buku cerita, ensiklopedia, kamus, dan berbagai buku pengetahuan untuk siswa. Agar semua siswa mendapat kesempatan membaca, peminjaman buku diatur oleh petugas perpustakaan. Siswa yang ingin meminjam memilih buku, lalu menyerahkannya bersama kartu anggota kepada petugas. Petugas mencatat judul buku, nama peminjam, dan tanggal pengembalian. Siswa perlu mengembalikan buku sesuai tanggal yang tercatat agar buku dapat dipinjam oleh teman lain. Jika belum selesai membaca, siswa dapat menanyakan kepada petugas apakah masa peminjaman dapat diperpanjang. Buku yang dibawa pulang juga harus dijaga agar halaman tidak robek, basah, atau terkena coretan. Ketika mengembalikan, siswa menyerahkan buku kepada petugas untuk diperiksa dan dicatat kembali. Apabila buku rusak atau hilang, siswa diminta segera melapor agar petugas dapat membantu mencari penyelesaian. Dengan mengikuti aturan peminjaman tersebut, koleksi perpustakaan lebih terjaga dan dapat digunakan bersama dalam waktu yang lebih lama. Gagasan utama paragraf tersebut adalah ...",
+    "subject": "Bahasa Indonesia",
+    "topic": "Gagasan Utama",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Ingat alurnya: paru-paru, serambi kiri, bilik kiri, seluruh tubuh.",
+    "id": "ipa-pd-01",
+    "level": 1,
+    "opts": [
+      "Serambi kanan",
+      "Serambi kiri",
+      "Bilik kanan",
+      "Bilik kiri"
+    ],
+    "penjelasan": "Darah kaya oksigen dari paru-paru masuk ke serambi kiri, lalu ke bilik kiri, lalu dipompa ke seluruh tubuh.",
+    "q": "Darah yang kaya oksigen dari paru-paru pertama kali masuk ke bagian jantung yang bernama ...",
+    "subject": "IPA",
+    "topic": "Peredaran Darah",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Arteri = keluar dari jantung; vena = kembali ke jantung.",
+    "id": "ipa-pd-02",
+    "level": 1,
+    "opts": [
+      "Arteri",
+      "Vena",
+      "Kapiler",
+      "Trakea"
+    ],
+    "penjelasan": "Arteri membawa darah keluar dari jantung; vena membawa darah kembali ke jantung.",
+    "q": "Pembuluh darah yang mengalirkan darah kaya oksigen dari jantung ke seluruh tubuh disebut pembuluh ...",
+    "subject": "IPA",
+    "topic": "Peredaran Darah",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Dengar jantung = stetoskop; ukur suhu = termometer; ukur tekanan = tensimeter.",
+    "id": "ipa-pd-03",
+    "level": 1,
+    "opts": [
+      "Stetoskop",
+      "Termometer",
+      "Tensimeter",
+      "Mikroskop"
+    ],
+    "penjelasan": "Stetoskop dipakai untuk mendengarkan bunyi jantung dan paru-paru.",
+    "q": "Alat yang digunakan dokter untuk mendengarkan detak jantung disebut ...",
+    "subject": "IPA",
+    "topic": "Peredaran Darah",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Merah = oksigen; putih = lawan kuman; keping = bekukan darah.",
+    "id": "ipa-pd-04",
+    "level": 2,
+    "opts": [
+      "Mengangkut oksigen ke seluruh tubuh",
+      "Melawan kuman penyakit",
+      "Membekukan darah saat luka",
+      "Mengangkut sari makanan"
+    ],
+    "penjelasan": "Sel darah merah mengandung hemoglobin yang mengikat oksigen dan mengantarkannya ke seluruh tubuh.",
+    "q": "Fungsi utama sel darah merah adalah ...",
+    "subject": "IPA",
+    "topic": "Peredaran Darah",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Hijau daun = klorofil; merah darah = hemoglobin.",
+    "id": "ipa-ft-01",
+    "level": 1,
+    "opts": [
+      "Klorofil",
+      "Melanin",
+      "Hemoglobin",
+      "Karoten"
+    ],
+    "penjelasan": "Klorofil di dalam daun menangkap energi cahaya untuk fotosintesis.",
+    "q": "Zat hijau daun yang menangkap cahaya matahari disebut ...",
+    "subject": "IPA",
+    "topic": "Fotosintesis",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Masuk = karbon dioksida; keluar = oksigen.",
+    "id": "ipa-ft-02",
+    "level": 1,
+    "opts": [
+      "Karbon dioksida",
+      "Oksigen",
+      "Nitrogen",
+      "Uap air"
+    ],
+    "penjelasan": "Tumbuhan menyerap karbon dioksida dan melepaskan oksigen saat fotosintesis.",
+    "q": "Hasil fotosintesis yang dilepas tumbuhan ke udara adalah ...",
+    "subject": "IPA",
+    "topic": "Fotosintesis",
+    "type": "konsep"
+  },
+  {
+    "ans": 2,
+    "cara_cepat": "Tempat klorofil terbanyak = tempat fotosintesis terbanyak.",
+    "id": "ipa-ft-03",
+    "level": 1,
+    "opts": [
+      "Akar",
+      "Batang",
+      "Daun",
+      "Bunga"
+    ],
+    "penjelasan": "Daun mengandung paling banyak klorofil sehingga menjadi tempat utama fotosintesis.",
+    "q": "Fotosintesis terjadi paling banyak di bagian tumbuhan yang bernama ...",
+    "subject": "IPA",
+    "topic": "Fotosintesis",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Cahaya = energi; air dan karbon dioksida = bahan.",
+    "id": "ipa-ft-04",
+    "level": 2,
+    "opts": [
+      "Bahan makanan",
+      "Sumber energi",
+      "Zat hijau daun",
+      "Pengatur suhu"
+    ],
+    "penjelasan": "Energi cahaya diubah menjadi energi kimia yang tersimpan dalam makanan tumbuhan.",
+    "q": "Tumbuhan memerlukan cahaya matahari untuk fotosintesis karena cahaya berfungsi sebagai ...",
+    "subject": "IPA",
+    "topic": "Fotosintesis",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Satu jalur = seri; banyak jalur = paralel.",
+    "id": "ipa-rl-01",
+    "level": 2,
+    "opts": [
+      "Ikut padam",
+      "Tetap menyala",
+      "Menyala lebih terang",
+      "Mati total"
+    ],
+    "penjelasan": "Rangkaian paralel punya banyak jalur arus, jadi satu jalur putus tidak mematikan jalur lain.",
+    "q": "Dalam rangkaian paralel, jika satu lampu padam maka lampu lain akan ...",
+    "subject": "IPA",
+    "topic": "Rangkaian Listrik",
+    "type": "konsep"
+  },
+  {
+    "ans": 2,
+    "cara_cepat": "Logam = konduktor; plastik, karet, kayu kering = isolator.",
+    "id": "ipa-rl-02",
+    "level": 1,
+    "opts": [
+      "Kayu kering",
+      "Karet",
+      "Besi",
+      "Plastik"
+    ],
+    "penjelasan": "Logam seperti besi menghantarkan listrik; kayu kering, karet, dan plastik adalah isolator.",
+    "q": "Benda berikut yang termasuk konduktor listrik adalah ...",
+    "subject": "IPA",
+    "topic": "Rangkaian Listrik",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Senter kecil = baterai; sepeda = dinamo; atap rumah = panel surya.",
+    "id": "ipa-rl-03",
+    "level": 1,
+    "opts": [
+      "Baterai",
+      "Magnet",
+      "Dinamo",
+      "Panel surya"
+    ],
+    "penjelasan": "Baterai menyimpan energi kimia yang diubah menjadi energi listrik untuk menyalakan lampu senter.",
+    "q": "Sumber energi listrik pada senter adalah ...",
+    "subject": "IPA",
+    "topic": "Rangkaian Listrik",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Tertutup = tersambung = arus mengalir; terbuka = putus = lampu padam.",
+    "id": "ipa-rl-04",
+    "level": 2,
+    "opts": [
+      "Saklar dalam keadaan terbuka",
+      "Arus dapat mengalir penuh",
+      "Tidak ada sumber energi",
+      "Lampu tidak menyala"
+    ],
+    "penjelasan": "Rangkaian tertutup berarti jalurnya tersambung penuh sehingga arus mengalir dan lampu menyala.",
+    "q": "Rangkaian listrik dikatakan tertutup bila ...",
+    "subject": "IPA",
+    "topic": "Rangkaian Listrik",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Gesek selalu melawan gerak; itulah yang membuat rem bekerja.",
+    "id": "ipa-gg-01",
+    "level": 1,
+    "opts": [
+      "Melaju lebih cepat",
+      "Berhenti saat direm",
+      "Melayang di udara",
+      "Bergerak tanpa mesin"
+    ],
+    "penjelasan": "Gesekan menahan gerak ban sehingga rem dapat menghentikan kendaraan.",
+    "q": "Gaya gesek antara ban dan jalan membuat kendaraan dapat ...",
+    "subject": "IPA",
+    "topic": "Gaya dan Gerak",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Magnet hanya menarik logam tertentu, terutama besi dan baja.",
+    "id": "ipa-gg-02",
+    "level": 1,
+    "opts": [
+      "Paku besi",
+      "Sendok plastik",
+      "Gelas kaca",
+      "Kayu"
+    ],
+    "penjelasan": "Magnet menarik benda dari besi, baja, nikel, dan kobalt; plastik, kaca, dan kayu tidak ditarik.",
+    "q": "Benda yang ditarik magnet adalah ...",
+    "subject": "IPA",
+    "topic": "Gaya dan Gerak",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Ada gerak tubuh = gaya otot; ada listrik = bukan gaya otot.",
+    "id": "ipa-gg-03",
+    "level": 1,
+    "opts": [
+      "Menendang bola",
+      "Menyalakan lampu",
+      "Memasak air",
+      "Mendinginkan es"
+    ],
+    "penjelasan": "Menendang, mendorong, dan menarik memakai gaya otot dari tubuh.",
+    "q": "Gaya otot digunakan saat ...",
+    "subject": "IPA",
+    "topic": "Gaya dan Gerak",
+    "type": "konsep"
+  },
+  {
+    "ans": 2,
+    "cara_cepat": "Jatuh ke bawah = gravitasi; menempel ke magnet = gaya magnet.",
+    "id": "ipa-gg-04",
+    "level": 1,
+    "opts": [
+      "Otot",
+      "Magnet",
+      "Gravitasi",
+      "Gesek"
+    ],
+    "penjelasan": "Gravitasi bumi menarik semua benda ke arah permukaan bumi.",
+    "q": "Benda jatuh ke tanah karena pengaruh gaya ...",
+    "subject": "IPA",
+    "topic": "Gaya dan Gerak",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Dua-duanya untung = mutualisme; satu untung satu rugi = parasitisme.",
+    "id": "ipa-ek-01",
+    "level": 1,
+    "opts": [
+      "Mutualisme",
+      "Parasitisme",
+      "Komensalisme",
+      "Predasi"
+    ],
+    "penjelasan": "Lebah mendapat madu dan bunga terbantu penyerbukannya, jadi keduanya untung.",
+    "q": "Hubungan antara lebah dan bunga termasuk simbiosis ...",
+    "subject": "IPA",
+    "topic": "Ekosistem",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Membuat makanan sendiri = produsen; memakan makhluk lain = konsumen.",
+    "id": "ipa-ek-02",
+    "level": 1,
+    "opts": [
+      "Konsumen",
+      "Produsen",
+      "Pengurai",
+      "Predator"
+    ],
+    "penjelasan": "Tumbuhan hijau membuat makanan sendiri lewat fotosintesis sehingga menjadi produsen.",
+    "q": "Dalam rantai makanan, tumbuhan hijau berperan sebagai ...",
+    "subject": "IPA",
+    "topic": "Ekosistem",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Pengurai = pemakan sisa makhluk mati, bukan pemburu.",
+    "id": "ipa-ek-03",
+    "level": 1,
+    "opts": [
+      "Cacing tanah",
+      "Elang",
+      "Kucing",
+      "Ayam"
+    ],
+    "penjelasan": "Cacing tanah menguraikan sisa makhluk hidup menjadi zat hara bagi tanah.",
+    "q": "Hewan berikut yang termasuk pengurai adalah ...",
+    "subject": "IPA",
+    "topic": "Ekosistem",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Hutan hilang = air tak tertahan = banjir dan longsor.",
+    "id": "ipa-ek-04",
+    "level": 2,
+    "opts": [
+      "Banjir dan tanah longsor",
+      "Udara semakin bersih",
+      "Habitat hewan bertambah",
+      "Air sungai semakin jernih"
+    ],
+    "penjelasan": "Hutan yang gundul tidak lagi menahan air hujan sehingga banjir dan longsor mudah terjadi.",
+    "q": "Akibat penebangan hutan secara liar adalah ...",
+    "subject": "IPA",
+    "topic": "Ekosistem",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Hijau = rendah; cokelat = tinggi; biru = air.",
+    "id": "ips-pk-01",
+    "level": 1,
+    "opts": [
+      "Pegunungan",
+      "Dataran rendah",
+      "Laut dalam",
+      "Gurun pasir"
+    ],
+    "penjelasan": "Pada peta, hijau melambangkan dataran rendah dan cokelat melambangkan pegunungan.",
+    "q": "Warna hijau pada peta umumnya menunjukkan daerah ...",
+    "subject": "IPS",
+    "topic": "Peta dan Kenampakan",
+    "type": "konsep"
+  },
+  {
+    "ans": 2,
+    "cara_cepat": "Kalimantan-Sulawesi = Makassar; Jawa-Sumatra = Sunda.",
+    "id": "ips-pk-02",
+    "level": 1,
+    "opts": [
+      "Sunda",
+      "Malaka",
+      "Makassar",
+      "Bali"
+    ],
+    "penjelasan": "Selat Makassar terletak di antara Kalimantan dan Sulawesi.",
+    "q": "Selat yang memisahkan Pulau Kalimantan dan Pulau Sulawesi adalah Selat ...",
+    "subject": "IPS",
+    "topic": "Peta dan Kenampakan",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Air asin + luas = laut; air tawar + cekungan = danau.",
+    "id": "ips-pk-03",
+    "level": 1,
+    "opts": [
+      "Danau",
+      "Laut",
+      "Sungai",
+      "Selat"
+    ],
+    "penjelasan": "Laut adalah cekungan besar berisi air asin; danau berisi air tawar dan sungai adalah aliran air.",
+    "q": "Kenampakan alam berupa cekungan besar berisi air asin disebut ...",
+    "subject": "IPS",
+    "topic": "Peta dan Kenampakan",
+    "type": "konsep"
+  },
+  {
+    "ans": 2,
+    "cara_cepat": "Pasangan berlawanan: timur-barat dan utara-selatan.",
+    "id": "ips-pk-04",
+    "level": 1,
+    "opts": [
+      "Utara",
+      "Selatan",
+      "Barat",
+      "Tenggara"
+    ],
+    "penjelasan": "Timur dan barat berlawanan arah; utara berlawanan dengan selatan.",
+    "q": "Arah mata angin yang berlawanan dengan timur adalah ...",
+    "subject": "IPS",
+    "topic": "Peta dan Kenampakan",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Buat = produksi; salurkan = distribusi; pakai = konsumsi.",
+    "id": "ips-ke-01",
+    "level": 1,
+    "opts": [
+      "Produksi",
+      "Distribusi",
+      "Konsumsi",
+      "Investasi"
+    ],
+    "penjelasan": "Distribusi adalah penyaluran barang; produksi adalah pembuatan dan konsumsi adalah pemakaian.",
+    "q": "Kegiatan menyalurkan barang dari produsen ke konsumen disebut ...",
+    "subject": "IPS",
+    "topic": "Kegiatan Ekonomi",
+    "type": "konsep"
+  },
+  {
+    "ans": 2,
+    "cara_cepat": "Buat = produsen; salurkan = distributor; pakai = konsumen.",
+    "id": "ips-ke-02",
+    "level": 1,
+    "opts": [
+      "Produsen",
+      "Distributor",
+      "Konsumen",
+      "Pedagang"
+    ],
+    "penjelasan": "Konsumen adalah pemakai akhir barang atau jasa.",
+    "q": "Orang yang memakai barang atau jasa disebut ...",
+    "subject": "IPS",
+    "topic": "Kegiatan Ekonomi",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Menghasilkan barang baru = produksi; memindahkan atau menjual = distribusi.",
+    "id": "ips-ke-03",
+    "level": 2,
+    "opts": [
+      "Menanam padi",
+      "Menjual beras",
+      "Membeli pupuk",
+      "Mengangkut gabah"
+    ],
+    "penjelasan": "Menanam padi menghasilkan barang baru; menjual dan mengangkut adalah distribusi.",
+    "q": "Contoh kegiatan produksi di bidang pertanian adalah ...",
+    "subject": "IPS",
+    "topic": "Kegiatan Ekonomi",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Bertemu langsung dan bisa tawar = tradisional; harga pasti = modern.",
+    "id": "ips-ke-04",
+    "level": 1,
+    "opts": [
+      "Modern",
+      "Tradisional",
+      "Saham",
+      "Online"
+    ],
+    "penjelasan": "Di pasar tradisional, penjual dan pembeli bertemu langsung dan harga bisa ditawar.",
+    "q": "Pasar tempat penjual dan pembeli bertemu secara langsung disebut pasar ...",
+    "subject": "IPS",
+    "topic": "Kegiatan Ekonomi",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Joglo = Jawa Tengah; Gadang = Sumatra Barat; Tongkonan = Sulawesi Selatan.",
+    "id": "ips-bd-01",
+    "level": 1,
+    "opts": [
+      "Jawa Tengah",
+      "Sumatra Barat",
+      "Sulawesi Selatan",
+      "Kalimantan Timur"
+    ],
+    "penjelasan": "Joglo adalah rumah adat Jawa Tengah yang atapnya berbentuk limas bertingkat.",
+    "q": "Rumah adat Joglo berasal dari daerah ...",
+    "subject": "IPS",
+    "topic": "Keragaman Budaya",
+    "type": "konsep"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Saman = Aceh; Kecak = Bali; Jaipong = Jawa Barat.",
+    "id": "ips-bd-02",
+    "level": 1,
+    "opts": [
+      "Aceh",
+      "Bali",
+      "Jawa Barat",
+      "Papua"
+    ],
+    "penjelasan": "Tari Saman adalah tarian tradisional dari Aceh yang ditarikan berkelompok dengan tepukan.",
+    "q": "Tari Saman berasal dari provinsi ...",
+    "subject": "IPS",
+    "topic": "Keragaman Budaya",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Jawa Barat = Sunda; Jawa Tengah dan Timur = Jawa.",
+    "id": "ips-bd-03",
+    "level": 1,
+    "opts": [
+      "Jawa",
+      "Sunda",
+      "Batak",
+      "Bugis"
+    ],
+    "penjelasan": "Masyarakat Jawa Barat memakai bahasa Sunda; bahasa Jawa dipakai di Jawa Tengah dan Jawa Timur.",
+    "q": "Bahasa daerah yang digunakan di Jawa Barat adalah bahasa ...",
+    "subject": "IPS",
+    "topic": "Keragaman Budaya",
+    "type": "konsep"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Berbeda suku = hormati, bukan hina, jauhi, atau paksa.",
+    "id": "ips-bd-04",
+    "level": 2,
+    "opts": [
+      "Menghina budayanya",
+      "Menghormati perbedaan",
+      "Menjauhi teman itu",
+      "Memaksa mengikuti budaya sendiri"
+    ],
+    "penjelasan": "Perbedaan suku dihormati dengan sikap toleransi, bukan hinaan atau paksaan.",
+    "q": "Sikap yang tepat terhadap teman berbeda suku adalah ...",
+    "subject": "IPS",
+    "topic": "Keragaman Budaya",
+    "type": "konsep"
+  },
+  {
+    "ans": 2,
+    "cara_cepat": "Cari lawan maknanya, bukan kata yang mirip artinya.",
+    "id": "vb-an-01",
+    "level": 1,
+    "opts": [
+      "Tekun",
+      "Giat",
+      "Malas",
+      "Gigih"
+    ],
+    "penjelasan": "Lawan dari rajin adalah malas; tekun, giat, dan gigih justru semakna dengan rajin.",
+    "q": "Antonim kata 'rajin' adalah ...",
+    "subject": "Verbal",
+    "topic": "Antonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Cari lawan maknanya, bukan kata yang mirip artinya.",
+    "id": "vb-an-02",
+    "level": 1,
+    "opts": [
+      "Terbuka",
+      "Bohong",
+      "Benar",
+      "Tulus"
+    ],
+    "penjelasan": "Lawan dari jujur adalah bohong; tulus dan benar justru dekat maknanya dengan jujur.",
+    "q": "Antonim kata 'jujur' adalah ...",
+    "subject": "Verbal",
+    "topic": "Antonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Cari lawan maknanya, bukan kata yang mirip artinya.",
+    "id": "vb-an-03",
+    "level": 1,
+    "opts": [
+      "Besar",
+      "Rendah",
+      "Luas",
+      "Jauh"
+    ],
+    "penjelasan": "Lawan dari tinggi adalah rendah.",
+    "q": "Antonim kata 'tinggi' adalah ...",
+    "subject": "Verbal",
+    "topic": "Antonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Cari lawan maknanya, bukan kata yang mirip artinya.",
+    "id": "vb-an-04",
+    "level": 1,
+    "opts": [
+      "Lambat",
+      "Gesit",
+      "Tangkas",
+      "Segera"
+    ],
+    "penjelasan": "Lawan dari cepat adalah lambat; gesit dan tangkas justru semakna dengan cepat.",
+    "q": "Antonim kata 'cepat' adalah ...",
+    "subject": "Verbal",
+    "topic": "Antonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Cari lawan maknanya, bukan kata yang mirip artinya.",
+    "id": "vb-an-05",
+    "level": 1,
+    "opts": [
+      "Boros",
+      "Irit",
+      "Cermat",
+      "Rajin"
+    ],
+    "penjelasan": "Lawan dari hemat adalah boros; irit dan cermat justru semakna dengan hemat.",
+    "q": "Antonim kata 'hemat' adalah ...",
+    "subject": "Verbal",
+    "topic": "Antonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Cari lawan maknanya, bukan kata yang mirip artinya.",
+    "id": "vb-an-06",
+    "level": 1,
+    "opts": [
+      "Takut",
+      "Gagah",
+      "Perkasa",
+      "Kuat"
+    ],
+    "penjelasan": "Lawan dari berani adalah takut; gagah, perkasa, dan kuat justru dekat maknanya dengan berani.",
+    "q": "Antonim kata 'berani' adalah ...",
+    "subject": "Verbal",
+    "topic": "Antonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Cari kata yang maknanya sama, bukan lawannya.",
+    "id": "vb-si-01",
+    "level": 1,
+    "opts": [
+      "Sedih",
+      "Gembira",
+      "Marah",
+      "Takut"
+    ],
+    "penjelasan": "Bahagia semakna dengan gembira; sedih adalah lawan maknanya.",
+    "q": "Sinonim kata 'bahagia' adalah ...",
+    "subject": "Verbal",
+    "topic": "Sinonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Cari kata yang maknanya sama, bukan lawannya.",
+    "id": "vb-si-02",
+    "level": 1,
+    "opts": [
+      "Lambat",
+      "Gesit",
+      "Lelah",
+      "Diam"
+    ],
+    "penjelasan": "Cepat semakna dengan gesit; lambat adalah lawan maknanya.",
+    "q": "Sinonim kata 'cepat' adalah ...",
+    "subject": "Verbal",
+    "topic": "Sinonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Cari kata yang maknanya sama, bukan lawannya.",
+    "id": "vb-si-03",
+    "level": 1,
+    "opts": [
+      "Buruk",
+      "Elok",
+      "Kotor",
+      "Suram"
+    ],
+    "penjelasan": "Indah semakna dengan elok; buruk adalah lawan maknanya.",
+    "q": "Sinonim kata 'indah' adalah ...",
+    "subject": "Verbal",
+    "topic": "Sinonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Cari kata yang maknanya sama, bukan lawannya.",
+    "id": "vb-si-04",
+    "level": 1,
+    "opts": [
+      "Malas",
+      "Tekun",
+      "Lambat",
+      "Boros"
+    ],
+    "penjelasan": "Rajin semakna dengan tekun; malas adalah lawan maknanya.",
+    "q": "Sinonim kata 'rajin' adalah ...",
+    "subject": "Verbal",
+    "topic": "Sinonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 1,
+    "cara_cepat": "Cari kata yang maknanya sama, bukan lawannya.",
+    "id": "vb-si-05",
+    "level": 1,
+    "opts": [
+      "Bodoh",
+      "Pintar",
+      "Malas",
+      "Lambat"
+    ],
+    "penjelasan": "Pandai semakna dengan pintar; bodoh adalah lawan maknanya.",
+    "q": "Sinonim kata 'pandai' adalah ...",
+    "subject": "Verbal",
+    "topic": "Sinonim",
+    "type": "bahasa"
+  },
+  {
+    "ans": 0,
+    "cara_cepat": "Cari kata yang maknanya sama, bukan lawannya.",
+    "id": "vb-si-06",
+    "level": 1,
+    "opts": [
+      "Ikhlas",
+      "Palsu",
+      "Dusta",
+      "Licik"
+    ],
+    "penjelasan": "Tulus semakna dengan ikhlas; palsu dan dusta adalah lawan maknanya.",
+    "q": "Sinonim kata 'tulus' adalah ...",
+    "subject": "Verbal",
+    "topic": "Sinonim",
+    "type": "bahasa"
+  }
+]

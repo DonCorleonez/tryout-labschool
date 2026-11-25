@@ -311,20 +311,25 @@ def _parent(app, email="p4@x.co"):
 def test_order_amount_comes_from_server_price(app):
     pt = _parent(app)
     st, o = call(app, "POST", "/api/parent/orders", {"amount_idr": 1}, token=pt)          # harga kiriman klien diabaikan
-    assert st == 200 and o["amount_idr"] == 499_000 and o["plan"] == "utama"
-    assert app.db.execute("SELECT amount_idr FROM orders WHERE public_ref=?", (o["order"],)).fetchone()[0] == 499_000
+    assert st == 200 and o["amount_idr"] == 99_000 and o["plan"] == "utama"
+    assert app.db.execute("SELECT amount_idr FROM orders WHERE public_ref=?", (o["order"],)).fetchone()[0] == 99_000
 
 
-def test_kejar_plan_without_price_is_not_sold(app):
-    pt = _parent(app, "k@x.co")
-    st, e = call(app, "POST", "/api/parent/orders", {}, token=pt, t="2026-12-10T10:00")
+def test_kejar_plan_without_price_is_not_sold(app, monkeypatch):
+    pt1 = _parent(app, "k1@x.co")
+    st1, o1 = call(app, "POST", "/api/parent/orders", {}, token=pt1, t="2026-12-10T10:00")
+    assert st1 == 200 and o1["plan"] == "kejar" and o1["amount_idr"] == 129_000
+    monkeypatch.setitem(be.IDR, "kejar", None)
+    st2, r2 = call(app, "POST", "/api/parent/register", {"name": "Ibu 2", "whatsapp": "081234567899", "email": "k2@x.co", "consent": True, "pin": "123456"})
+    assert st2 == 200
+    st, e = call(app, "POST", "/api/parent/orders", {}, token=r2["token"], t="2026-12-10T10:00")
     assert st == 409 and e["error"] == "harga_belum_ditetapkan"
 
 
 def test_parent_home_and_playtest_pay_activates_once(app):
     pt = _parent(app, "h@x.co")
     st, h = call(app, "GET", "/api/parent/home", token=pt)
-    assert st == 200 and h["plan"] == "free" and h["offer"]["amount_idr"] == 499_000 and h["playtest"]
+    assert st == 200 and h["plan"] == "free" and h["offer"]["amount_idr"] == 99_000 and h["playtest"]
     o = call(app, "POST", "/api/parent/orders", {}, token=pt)[1]
     assert call(app, "POST", f"/api/playtest/orders/{o['order']}/pay", token=pt)[0] == 200
     h = call(app, "GET", "/api/parent/home", token=pt)[1]
@@ -367,3 +372,162 @@ def test_same_email_or_whatsapp_cannot_register_twice(app, email, wa):
     assert call(app, "POST", "/api/parent/register", {"name": "I", "whatsapp": "081234567890", "email": "sama@x.co", "consent": True, "pin": "123456"})[0] == 200
     st, e = call(app, "POST", "/api/parent/register", {"name": "I", "whatsapp": wa, "email": email, "consent": True, "pin": "123456"})
     assert st == 409 and e["error"] == "sudah_terdaftar"
+
+
+# ---------- Neon redesign v1: G-22, G-20, F-06, gamifikasi, drill, Buku Salah, full history ----------
+def test_g22_corrupted_payload_job_does_not_block_next_job(app):
+    r1 = call(app, "POST", "/api/parent/register", {"name": "Ibu 1", "whatsapp": "081211111111", "email": "g1@x.co", "consent": True, "pin": "123456"}, t="2026-11-04T10:00")[1]
+    r2 = call(app, "POST", "/api/parent/register", {"name": "Ibu 2", "whatsapp": "081222222222", "email": "g2@x.co", "consent": True, "pin": "123456"}, t="2026-11-04T10:00")[1]
+    ct1, ct2 = child(app, r1["child_code"]), child(app, r2["child_code"])
+    s1 = run_tryout(app, ct1, "DIAG", "2026-11-06T18:00")
+    s2 = run_tryout(app, ct2, "DIAG", "2026-11-06T18:00")
+    call(app, "POST", f"/api/child/attempts/{s1['attempt']}/submit", {"answers": {}}, token=ct1, t="2026-11-06T18:10")
+    call(app, "POST", f"/api/child/attempts/{s2['attempt']}/submit", {"answers": {}}, token=ct2, t="2026-11-06T18:10")
+    # Korupsi job pertama secara eksplisit (skenario G-22)
+    app.db.execute("UPDATE analysis_jobs SET input_json='{corrupted_json' WHERE id=1")
+    app.db.commit()
+    st, res = call(app, "POST", "/api/admin/analysis/standin", admin=True, t="2026-11-08T22:00")
+    assert st == 200 and res["gagal"] == 1 and res["diproses"] == 1
+    j1 = app.db.execute("SELECT state, error FROM analysis_jobs WHERE id=1").fetchone()
+    j2 = app.db.execute("SELECT state FROM analysis_jobs WHERE id=2").fetchone()
+    assert j1["state"] == "gagal" and "corrupted_payload" in j1["error"] and j2["state"] == "selesai"
+    # Keluarga 1 tetap menerima laporan fallback aturan dan drill fallback
+    rep1 = call(app, "GET", "/api/parent/report/latest", token=r1["token"], t="2026-11-09T07:05")[1]["report"]
+    assert rep1 is not None and rep1["mode"] == "fallback"
+
+
+def test_g20_device_limit_3_per_family(app):
+    r = register(app)
+    for i in range(1, 4):
+        st, _ = call(app, "POST", "/api/child/login", {"code": r["child_code"]}, headers={"X-Device-Id": f"hp-{i}"})
+        assert st == 200
+    st4, e4 = call(app, "POST", "/api/child/login", {"code": r["child_code"]}, headers={"X-Device-Id": "hp-4"})
+    assert st4 == 403 and e4["error"] == "device_limit_tercapai"
+
+
+def test_lab_access_code_format_and_login_compatible(app):
+    r = register(app)
+    assert r["access_code"] == f"LAB-{r['child_code']}"
+    st, cl = call(app, "POST", "/api/child/login", {"code": r["access_code"]})
+    assert st == 200 and cl["token"]
+
+
+def test_f06_parent_pin_reset_flow(app):
+    register(app)
+    st, res = call(app, "POST", "/api/parent/pin/reset-request", {"email": "a@b.co"})
+    assert st == 200 and res["ok"] is True
+    body = app.db.execute("SELECT body_text FROM email_outbox WHERE kind='reset_pin'").fetchone()["body_text"]
+    tok = body.split(": ")[-1].strip()
+    assert call(app, "POST", "/api/parent/pin/reset", {"token": tok, "pin": "654321"})[0] == 200
+    assert call(app, "POST", "/api/parent/login", {"email": "a@b.co", "pin": "654321"})[0] == 200
+
+
+def test_gamification_xp_streaks_stars_and_levels():
+    import gamification as gm
+    # 12 soal: 8 benar beruntun (hits 3, 5, 8 -> +5 +10 +15 = +30), lalu 1 salah, lalu 3 benar -> 11/12 = 91.7% -> 3 bintang
+    seq = [True] * 8 + [False] + [True] * 3
+    res = gm.score_tryout_xp(seq, 91.7)
+    assert res["base_xp"] == 110 and res["streak_bonus"] == 30 and res["total_xp"] == 140 and res["stars"] == 3
+    assert gm.stars_for_pct(89.9) == 2 and gm.stars_for_pct(74.9) == 1 and gm.stars_for_pct(59.9) == 0
+    assert gm.level_info(0)["level"] == 1 and gm.level_info(100)["level"] == 2 and gm.level_info(3200)["level"] == 10
+    assert gm.level_info(4000)["level"] == 11
+
+
+def test_gamification_isolated_from_parent_reports(app):
+    r, ct = full_family(app)
+    s = run_tryout(app, ct, "TO2-1", "2026-11-14T10:00")
+    st, sub = call(app, "POST", f"/api/child/attempts/{s['attempt']}/submit", {"answers": {"1": 0}}, token=ct, t="2026-11-14T10:30")
+    assert st == 200 and "gamification" in sub
+    call(app, "POST", "/api/admin/analysis/standin", admin=True, t="2026-11-16T05:00")
+    st_rep, rep = call(app, "GET", "/api/parent/reports", token=r["token"], t="2026-11-16T10:00")
+    assert st_rep == 200 and len(rep["trends"]) == 1
+    dumped = json.dumps(rep).lower()
+    for banned in ('"xp"', '"stars"', '"level"', '"streak"', "pasti bisa", "dijamin lolos"):
+        assert banned not in dumped
+
+
+def test_drill_interactive_start_finish_adds_wrong_to_buku_salah(app):
+    r, ct = full_family(app)
+    s = run_tryout(app, ct, "TO2-1", "2026-11-14T10:00")
+    call(app, "POST", f"/api/child/attempts/{s['attempt']}/submit", {"answers": {}}, token=ct, t="2026-11-14T10:30")
+    call(app, "POST", "/api/admin/analysis/standin", admin=True, t="2026-11-16T05:00")
+    d = call(app, "GET", "/api/child/drills", token=ct, t="2026-11-16T10:00")[1]["drills"][0]
+    st_s, ds = call(app, "GET", f"/api/child/drills/{d['assignment']}/sessions/{d['session']}/start", token=ct, t="2026-11-16T10:05")
+    assert st_s == 200 and len(ds["questions"]) == 5 and "ans" not in json.dumps(ds)
+    st_f, df = call(app, "POST", f"/api/child/drills/{d['assignment']}/sessions/{d['session']}/finish", {"answers": {"1": 0}}, token=ct, t="2026-11-16T10:10")
+    assert st_f == 200 and df["ok"] and len(df["review"]) == 5
+    bs = call(app, "GET", "/api/child/buku-salah", token=ct, t="2026-11-16T10:15")[1]
+    assert any(x["source_type"] == "drill" for x in bs["items"])
+
+
+def test_child_result_endpoint_and_taper_flag(app):
+    _, ct = full_family(app)
+    s = run_tryout(app, ct, "DIAG", "2026-11-06T18:00")
+    call(app, "POST", f"/api/child/attempts/{s['attempt']}/submit", {"answers": {"1": 0}}, token=ct, t="2026-11-06T18:20")
+    st, res = call(app, "GET", f"/api/child/attempts/{s['attempt']}/result", token=ct, t="2026-11-06T18:25")
+    assert st == 200 and len(res["questions"]) == 12 and "gamification" in res
+    home_taper = call(app, "GET", "/api/child/home", token=ct, t="2027-01-26T10:00")[1]
+    assert home_taper["clock"] == "taper" and home_taper["taper"] is True
+
+
+def test_prestasi_claim_stub_and_duplicate_proof_rejected(app):
+    r1 = register(app, "2026-11-04T10:00")
+    r2 = call(app, "POST", "/api/parent/register", {"name": "Ibu 2", "whatsapp": "081234567891", "email": "b@c.co", "consent": True, "pin": "123456"}, t="2026-11-04T10:00")[1]
+    st1, p1 = call(app, "POST", "/api/parent/prestasi", {"proof_ref": "SURAT-PRESTASI-99"}, token=r1["token"])
+    assert st1 == 200 and p1["discount_percent"] == "TBD" and p1["discount_code"].startswith("PRESTASI-")
+    st2, p2 = call(app, "POST", "/api/parent/prestasi", {"proof_ref": "SURAT-PRESTASI-99"}, token=r2["token"])
+    assert st2 == 409 and p2["error"] == "bukti_sudah_dipakai"
+
+
+def test_drill_finish_ignores_client_score_and_computes_on_server(app):
+    _, ct = full_family(app)
+    s = run_tryout(app, ct, "TO2-1", "2026-11-14T10:00")
+    call(app, "POST", f"/api/child/attempts/{s['attempt']}/submit", {"answers": {}}, token=ct, t="2026-11-14T10:30")
+    call(app, "POST", "/api/admin/analysis/standin", admin=True, t="2026-11-16T05:00")
+    d = call(app, "GET", "/api/child/drills", token=ct, t="2026-11-16T10:00")[1]["drills"][0]
+    aid = d["assignment"]
+
+    # Sesi 1: klien mengirim correct=5, total=5 tanpa answers -> server wajib hitung 0/5 dan base_xp=0
+    call(app, "GET", f"/api/child/drills/{aid}/sessions/1/start", token=ct, t="2026-11-16T10:05")
+    st1, f1 = call(app, "POST", f"/api/child/drills/{aid}/sessions/1/finish", {"correct": 5, "total": 5}, token=ct, t="2026-11-16T10:06")
+    assert st1 == 200 and f1["correct"] == 0 and f1["total"] == 5
+    assert f1["gamification"]["base_xp"] == 0 and f1["gamification"]["completion_xp"] == 5
+    assert f1["gamification"]["total_xp"] == 5
+
+    # Sesi 2: klien mengirim answers valid + bogus correct=0, total=99 -> server hitung dari answers
+    call(app, "GET", f"/api/child/drills/{aid}/sessions/2/start", token=ct, t="2026-11-16T10:10")
+    qs2 = bank.get_drill_questions(d["topic"], app._drill_seed(1, aid, 2), count=5)
+    ans2 = {str(i): q["ans"] for i, q in enumerate(qs2, 1)}
+    st2, f2 = call(app, "POST", f"/api/child/drills/{aid}/sessions/2/finish", {"answers": ans2, "correct": 0, "total": 99}, token=ct, t="2026-11-16T10:11")
+    assert st2 == 200 and f2["correct"] == 5 and f2["total"] == 5
+    assert f2["gamification"]["base_xp"] == 50 and f2["gamification"]["total_xp"] == 55
+
+
+def test_g20_same_user_agent_four_device_ids_blocked_and_relogin_allowed(app):
+    r = register(app)
+    same_ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0"
+    for i in range(1, 4):
+        st, _ = call(app, "POST", "/api/child/login", {"code": r["child_code"]}, headers={"User-Agent": same_ua, "X-Device-Id": f"dev_browser_{i}"})
+        assert st == 200
+    # Login ulang dari perangkat 2 yang sama tetap diizinkan tanpa menambah slot
+    st_re, _ = call(app, "POST", "/api/child/login", {"code": r["child_code"]}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_browser_2"})
+    assert st_re == 200
+    # Perangkat ke-4 unik ditolak walau User-Agent identik
+    st4, e4 = call(app, "POST", "/api/child/login", {"code": r["child_code"]}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_browser_4"})
+    assert st4 == 403 and e4["error"] == "device_limit_tercapai"
+
+
+def test_g20_parent_register_and_relogin_same_device_counts_as_one_slot(app):
+    same_ua = "Mozilla/5.0 Chrome/120.0"
+    st, r = call(app, "POST", "/api/parent/register",
+                 {"name": "Ibu Uji", "whatsapp": "081234567890", "email": "p-dev@b.co", "campus": "Cibubur", "track": "Tes", "grade": "6", "consent": True, "pin": "123456"},
+                 headers={"User-Agent": same_ua, "X-Device-Id": "dev_p1"})
+    assert st == 200 and r["token"]
+    # Login ulang di perangkat pendaftaran dev_p1 tetap terhitung 1 slot
+    assert call(app, "POST", "/api/parent/login", {"email": "p-dev@b.co", "pin": "123456"}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_p1"})[0] == 200
+    # Perangkat ke-2 dan ke-3 yang sah tetap diterima (total 3 slot: dev_p1, dev_p2, dev_p3)
+    assert call(app, "POST", "/api/parent/login", {"email": "p-dev@b.co", "pin": "123456"}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_p2"})[0] == 200
+    assert call(app, "POST", "/api/parent/login", {"email": "p-dev@b.co", "pin": "123456"}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_p3"})[0] == 200
+    # Perangkat ke-4 ditolak
+    st4, e4 = call(app, "POST", "/api/parent/login", {"email": "p-dev@b.co", "pin": "123456"}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_p4"})
+    assert st4 == 403 and e4["error"] == "device_limit_tercapai"

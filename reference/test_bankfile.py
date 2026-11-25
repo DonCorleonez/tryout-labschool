@@ -108,3 +108,123 @@ def test_backend_uses_file_bank_and_scores_by_its_keys():
 def test_stub_used_when_no_bank_configured():
     bank.configure(None)
     assert len(bank.get_questions(1)) == 12
+
+
+def test_forbidden_labschool_word_rejected():
+    it = {"id": "IPA-FOT-L1-0001", "version": 1, "subject": "IPA", "topic": "IPA-FOT", "subtopic": "Fotosintesis",
+          "level": 1, "type": "pg4", "stem": "Siswa Labschool mengamati daun hijau ...", "options": ["A", "B", "C", "D"],
+          "answer_idx": 0, "explanation": "Penjelasan cukup panjang untuk soal ini.", "shortcut": "Cara cepat cukup panjang.", "est_seconds": 45, "image": None}
+    assert any("Labschool" in e for e in bf.validate_item(it, set()))
+
+
+def test_renumber_bank_avoids_existing_collisions(tmp_path):
+    import renumber_bank as rb
+    ex = tmp_path / "existing"; ex.mkdir()
+    (ex / "old.jsonl").write_text(json.dumps({"id": "IPA-FOT-L1-0005", "topic": "IPA-FOT", "level": 1}) + "\n")
+    items = [{"id": "IPA-FOT-L1-0001", "topic": "IPA-FOT", "level": 1}, {"id": "IPA-FOT-L1-0002", "topic": "IPA-FOT", "level": 1}]
+    ren, stats = rb.renumber_items(items, existing_dir=ex)
+    assert stats["renumbered"] == 2 and [x["id"] for x in ren] == ["IPA-FOT-L1-0006", "IPA-FOT-L1-0007"]
+
+
+def test_smoke_import_batch_01_loads_56_items_and_46_templates():
+    import import_batch as ib
+    res = ib.import_batch(HERE / "testdata" / "batch_01.json")
+    assert res["items_loaded"] == 56 and res["templates_loaded"] == 46 and res["rejected_count"] == 0 and res["passages_loaded"] == 4
+
+
+def test_batch_01_builds_full_format_tryout_and_drills():
+    b = bf.Bank.load(HERE / "testdata")
+    to = b.build_tryout(42)
+    assert len(to) == 40 and all("Labschool" not in json.dumps(q) for q in to)
+    dr = b.build_drill("Pecahan", 7, count=5)
+    assert len(dr) == 5 and all(q["topic"] == "Pecahan" for q in dr)
+
+
+def test_chatgpt_raw_batch_01_renumbers_and_validates(tmp_path):
+    from collections import Counter
+    import import_batch as ib
+    import renumber_bank as rb
+    raw_src = HERE / "testdata" / "batch_01_chatgpt_raw.json"
+    res = ib.import_batch(raw_src)
+    assert res["renumbered"] == 56
+    assert res["items_loaded"] == 56 and res["passages_loaded"] == 4 and res["rejected_count"] == 0
+    assert res["warnings"] == []
+
+    staged = tmp_path / "staged.json"
+    rb.renumber_batch_file(raw_src, staged)
+    b = bf.Bank.load(tmp_path)
+    subj_counts = Counter(x["subject"] for x in b.items.values())
+    topic_counts = Counter(x["topic"] for x in b.items.values())
+    assert subj_counts == {"Pemahaman Bacaan": 4, "Verbal": 20, "IPA": 20, "IPS": 12}
+    assert topic_counts["BAC-GAG"] == 4
+    assert all(not p.get("needs_passage_revision") for p in b.passages.values())
+
+
+def test_short_passage_in_chatgpt_raw_flagged_without_changing_subject(tmp_path):
+    import import_batch as ib
+    short_raw = [{
+        "id": "bi-gu-short",
+        "subject": "Bahasa Indonesia",
+        "topic": "Gagasan Utama",
+        "level": 1,
+        "q": "Pak Rudi menyiram tanaman setiap pagi agar subur. Gagasan utama paragraf tersebut adalah ...",
+        "opts": ["Cara merawat tanaman.", "Pak Rudi bangun pagi.", "Daun kering dibuang.", "Bunga lebat indah."],
+        "ans": 0,
+        "penjelasan": "Semua kalimat menjelaskan perawatan tanaman agar tumbuh subur.",
+        "cara_cepat": "Cari kalimat yang merangkum keseluruhan isi paragraf."
+    }]
+    src = tmp_path / "short_raw.json"
+    dest = tmp_path / "dest_bank"
+    src.write_text(json.dumps(short_raw, ensure_ascii=False), encoding="utf-8")
+    res = ib.import_batch(src, dest_dir=dest)
+    assert res["items_loaded"] == 1 and res["passages_loaded"] == 1 and res["rejected_count"] == 0
+    assert len(res["warnings"]) == 1 and "target 120-250" in res["warnings"][0]
+    assert not dest.exists()  # batch dengan peringatan panjang bacaan tidak dipromosikan ke dest_dir
+
+
+def test_percent_template_all_valid_combinations_and_seed_15():
+    import re
+    templates = {}
+    source = json.loads((HERE / "testdata/batch_01.json").read_text())["templates_code"]
+    exec(compile(source, "batch_01 templates", "exec"), templates)
+    generate = templates["mat_14_psn_bagian"]
+
+    class Choose:
+        def __init__(self, total, percent):
+            self.choices = iter((total, percent))
+
+        def choice(self, options):
+            selected = next(self.choices)
+            assert selected in options
+            return selected
+
+    for total in (40, 50, 80, 100, 120):
+        for percent in (15, 20, 25, 30, 40):
+            if total * percent % 100:
+                continue
+            result = generate(Choose(total, percent))
+            assert f"{total} siswa" in result["stem"]
+            assert f"{percent}%" in result["stem"]
+            assert int(result["correct"]) * 100 == total * percent
+            assert not bf.validate_template_output(result)
+
+    for seed in range(1000):
+        result = generate(random.Random(seed))
+        total, percent = map(int, re.search(r"Dari (\d+) siswa.*sebanyak (\d+)%", result["stem"]).groups())
+        assert int(result["correct"]) * 100 == total * percent
+        assert not bf.validate_template_output(result)
+
+
+def test_fpb_template_hint_and_answers():
+    import math
+    import re
+    templates = {}
+    source = json.loads((HERE / "testdata/batch_01.json").read_text())["templates_code"]
+    exec(compile(source, "batch_01 templates", "exec"), templates)
+    generate = templates["mat_06_fpb_dua"]
+    for seed in range(1000):
+        result = generate(random.Random(seed))
+        a, b = map(int, re.search(r"dari (\d+) dan (\d+)", result["stem"]).groups())
+        assert int(result["correct"]) == math.gcd(a, b)
+        assert "membagi kedua bilangan" in result["shortcut"]
+        assert not bf.validate_template_output(result)

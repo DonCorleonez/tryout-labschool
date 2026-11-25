@@ -4,17 +4,46 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Tryout — Ruang Anak</title>
+<title>Tryout — Ruang Siswa</title>
+<link rel="stylesheet" href="/css/roblox-theme.css">
 <link rel="stylesheet" href="/css/child.css">
 </head>
 <body>
 <header class="top">
-  <span class="brand">Ruang Tryout</span>
+  <div class="brand-wrap">
+    <span class="brand-badge" aria-hidden="true">LT</span>
+    <span class="brand">Ruang Tryout</span>
+  </div>
+  <div id="level-bar" class="level-bar" hidden aria-label="Level dan XP">
+    <span id="lvl-badge" class="lvl-pill">Level 1</span>
+    <div class="xp-track" aria-hidden="true"><span id="xp-fill" class="xp-fill" style="width:0%"></span></div>
+    <span id="xp-text" class="xp-text">0 XP</span>
+    <span id="star-badge" class="star-pill" title="Total bintang">★ 0</span>
+  </div>
   <span id="clock" class="clock" aria-live="off"></span>
 </header>
 <main id="app" tabindex="-1">
   <p class="muted">Memuat…</p>
 </main>
+<nav id="tab-bar" class="tab-bar" hidden aria-label="Menu utama siswa">
+  <a class="tab-item" href="#/beranda" data-tab="beranda">
+    <span class="tab-ico" aria-hidden="true">🏁</span>
+    <span class="tab-lbl">Tryout</span>
+  </a>
+  <a class="tab-item" href="#/laporan" data-tab="laporan">
+    <span class="tab-ico" aria-hidden="true">📊</span>
+    <span class="tab-lbl">Report</span>
+  </a>
+  <a class="tab-item" href="#/drill" data-tab="drill">
+    <span class="tab-ico" aria-hidden="true">⚡</span>
+    <span class="tab-lbl">Drill</span>
+  </a>
+  <a class="tab-item" href="#/buku-salah" data-tab="buku-salah">
+    <span class="tab-ico" aria-hidden="true">📘</span>
+    <span class="tab-lbl">Buku Salah</span>
+    <span id="tab-bs-count" class="tab-badge" hidden>0</span>
+  </a>
+</nav>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="/js/api.js"></script>
 <script src="/js/runner.js"></script>

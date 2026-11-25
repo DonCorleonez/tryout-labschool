@@ -87,3 +87,24 @@ CREATE TABLE IF NOT EXISTS email_outbox (
   status TEXT NOT NULL DEFAULT 'antre',         -- antre|terkirim|gagal|log
   attempts INTEGER NOT NULL DEFAULT 0, provider_id TEXT, error TEXT, created_at TEXT NOT NULL, sent_at TEXT
 );
+CREATE TABLE IF NOT EXISTS child_xp_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  source_type TEXT NOT NULL, source_ref TEXT NOT NULL, xp INTEGER NOT NULL,
+  detail_json TEXT, created_at TEXT NOT NULL, UNIQUE(family_id, source_type, source_ref)
+);
+CREATE TABLE IF NOT EXISTS buku_salah (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  source_type TEXT NOT NULL, source_ref TEXT NOT NULL, window_k INTEGER,
+  qid TEXT NOT NULL, subject TEXT NOT NULL, topic TEXT NOT NULL, subtopic TEXT,
+  stem TEXT NOT NULL, options_json TEXT NOT NULL, chosen_idx INTEGER, correct_idx INTEGER NOT NULL,
+  explanation TEXT, shortcut TEXT, created_at TEXT NOT NULL,
+  UNIQUE(family_id, source_type, source_ref, qid)
+);
+CREATE TABLE IF NOT EXISTS pin_resets (
+  token_hash TEXT PRIMARY KEY, family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  expires_at TEXT NOT NULL, used_at TEXT, created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS prestasi_claims (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, family_id INTEGER UNIQUE NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  proof_hash TEXT UNIQUE NOT NULL, note TEXT, discount_code TEXT, created_at TEXT NOT NULL
+);

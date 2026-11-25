@@ -37,6 +37,7 @@ TOPIC_NAME = {code: name for d in TAXONOMY.values() for code, name in d.items()}
 # tidak dinilai dan belum didukung mesin, jadi tidak dihitung di sini. Ubah hanya atas keputusan pemilik.
 COMPOSITION = {"Kuantitatif": 11, "Pemahaman Bacaan": 7, "Verbal": 7, "IPA": 10, "IPS": 5}
 FORBIDDEN_OPTS = re.compile(r"^(semua (benar|salah|jawaban)|.*\b[a-d] dan [a-d] benar\b|tidak ada (yang )?benar)", re.I)
+FORBIDDEN_WORDS = re.compile(r"\blabschool\b", re.I)
 ID_RX = re.compile(r"^(?P<topic>[A-Z]{3}-[A-Z]{3})-L(?P<level>[123])-(?P<n>\d{4})$")
 REQ = ("id", "version", "subject", "topic", "subtopic", "level", "type", "stem", "options", "answer_idx", "explanation", "shortcut", "est_seconds")
 _norm = lambda s: re.sub(r"\W+", " ", str(s).lower()).strip()
@@ -59,7 +60,8 @@ def validate_item(it: dict, passages: set) -> list[str]:
     o = it["options"]
     if not (isinstance(o, list) and len(o) == 4 and all(isinstance(x, str) and x.strip() for x in o)): e.append("options harus 4 teks tidak kosong")
     else:
-        if len({_norm(x) for x in o}) != 4: e.append("ada opsi duplikat")
+        uniq = {re.sub(r"\s+", " ", x.strip()) for x in o} if it.get("topic") == "VER-BKU" else {_norm(x) for x in o}
+        if len(uniq) != 4: e.append("ada opsi duplikat")
         if any(FORBIDDEN_OPTS.match(x.strip()) for x in o): e.append("opsi terlarang (semua benar/salah, A dan B benar, ...)")
         if isinstance(it["answer_idx"], int) and 0 <= it["answer_idx"] <= 3:
             key = _norm(o[it["answer_idx"]])
@@ -75,6 +77,8 @@ def validate_item(it: dict, passages: set) -> list[str]:
     pid = it.get("passage_id")
     if it["topic"].startswith("BAC-") and not pid: e.append("soal bacaan wajib passage_id")
     if pid and pid not in passages: e.append(f"passage_id '{pid}' tidak ditemukan")
+    if any(FORBIDDEN_WORDS.search(str(t)) for t in [it.get("stem", ""), it.get("explanation", ""), it.get("shortcut", ""), *(o if isinstance(o, list) else [])]):
+        e.append("kata terlarang 'Labschool' tidak boleh muncul di dalam soal")
     return e
 
 
@@ -107,6 +111,8 @@ def validate_template_output(out: dict) -> list[str]:
         elif _same_value([out["correct"], *d]): e.append("dua opsi bernilai sama (mis. 2/4 dan 1/2)")
         if any(not str(x).strip() for x in [out["correct"], *d]): e.append("opsi kosong")
     if len(str(out["explanation"])) < 20 or len(str(out["shortcut"])) < 10: e.append("explanation/shortcut terlalu pendek")
+    if any(FORBIDDEN_WORDS.search(str(t)) for t in [out.get("stem", ""), out.get("correct", ""), out.get("explanation", ""), out.get("shortcut", ""), *(d if isinstance(d, list) else [])]):
+        e.append("kata terlarang 'Labschool' tidak boleh muncul di dalam soal")
     return e
 
 
@@ -138,6 +144,34 @@ class Bank:
     @classmethod
     def load(cls, folder) -> "Bank":
         b = cls(); folder = Path(folder); raw = []
+        for f in sorted(folder.glob("*.json")):
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+            except ValueError as ex:
+                b.rejected.append((f.name, "(json)", [f"JSON tidak valid: {ex}"])); continue
+            if isinstance(data, dict):
+                for p in data.get("passages", []):
+                    if isinstance(p, dict) and "passage_id" in p and "text" in p:
+                        words = len(str(p["text"]).split())
+                        if not 120 <= words <= 250: b.warnings.append(f"{f.name}: bacaan {p['passage_id']} {words} kata (target 120-250)")
+                        if FORBIDDEN_WORDS.search(str(p["text"])):
+                            b.rejected.append((f.name, str(p["passage_id"]), ["kata terlarang 'Labschool' di bacaan"]))
+                        else:
+                            b.passages[p["passage_id"]] = p
+                for idx, it in enumerate(data.get("items", []), 1):
+                    raw.append((f.name, idx, it))
+                tpl_src = data.get("templates_code")
+                if isinstance(tpl_src, str) and tpl_src.strip():
+                    ns = {}
+                    try:
+                        exec(compile(tpl_src, f.name, "exec"), ns)  # noqa: S102  berkas batch tervalidasi lokal
+                        for n, fn in ns.items():
+                            if n.startswith("mat_") and callable(fn):
+                                errs = check_template(fn)
+                                if errs: b.rejected.append((f.name, n, errs))
+                                else: b.templates[n] = fn
+                    except Exception as ex:  # noqa: BLE001
+                        b.rejected.append((f.name, "(templates_code)", [f"gagal dimuat: {ex}"]))
         for f in sorted(folder.glob("*.jsonl")):
             for ln, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
                 if not line.strip(): continue
@@ -225,5 +259,51 @@ class Bank:
                 p = self.passages.get(x.get("passage_id"))
                 add(x["id"], subj, x["topic"], x["level"], x["stem"], x["options"], x["options"][x["answer_idx"]], x["explanation"], x["shortcut"],
                     {"id": p["passage_id"], "text": p["text"]} if p else None, sub=x["subtopic"])
+        for n_, q in enumerate(out, 1): q["no"] = n_
+        return out
+
+    def build_drill(self, topic: str, seed: int, count: int = 5, exclude: set | None = None) -> list[dict]:
+        """Rakit sesi drill deterministik untuk satu `topic` (nama atau kode topik) atau 'Pemeliharaan'."""
+        r = random.Random(seed); exclude = exclude or set(); out = []
+        def add(qid, subj, code, lvl, stem, opts, ans_text, expl, sc_txt, passage=None, sub=""):
+            opts = opts[:]; r.shuffle(opts)
+            out.append({"id": qid, "subject": subj, "topic": TOPIC_NAME[code], "topic_code": code, "subtopic": sub, "level": lvl,
+                        "q": stem, "opts": opts, "ans": opts.index(ans_text), "explanation": expl, "shortcut": sc_txt, "passage": passage})
+        if topic == "Pemeliharaan":
+            pool = [x for x in self.items.values() if x["level"] >= 2] or list(self.items.values())
+            fresh = [x for x in pool if x["id"] not in exclude]
+            pool = fresh if len(fresh) >= max(1, count - 2) else pool
+            pool.sort(key=lambda x: x["id"]); r.shuffle(pool)
+            for x in pool[:max(0, count - 2)]:
+                p = self.passages.get(x.get("passage_id"))
+                add(x["id"], x["subject"], x["topic"], x["level"], x["stem"], x["options"], x["options"][x["answer_idx"]],
+                    x["explanation"], x["shortcut"], {"id": p["passage_id"], "text": p["text"]} if p else None, sub=x["subtopic"])
+            names = sorted(self.templates); r.shuffle(names)
+            for i in range(max(0, count - len(out))):
+                if not names: break
+                name = names[i % len(names)]; t = self.templates[name](random.Random(seed * 997 + i))
+                add(f"{name}#d{seed}-{i}", "Kuantitatif", t["topic"], t["level"], t["stem"], [t["correct"], *t["distractors"]],
+                    t["correct"], t["explanation"], t["shortcut"], sub=t["subtopic"])
+            for n_, q in enumerate(out, 1): q["no"] = n_
+            return out[:count]
+        code = topic if topic in TOPIC_NAME else next((k for k, v in TOPIC_NAME.items() if v.lower() == topic.lower()), None)
+        if code and code.startswith("MAT-"):
+            names = [n for n, fn in sorted(self.templates.items()) if fn(random.Random(0))["topic"] == code]
+            if not names: names = sorted(self.templates)
+            r.shuffle(names)
+            for i in range(count):
+                if not names: break
+                name = names[i % len(names)]; t = self.templates[name](random.Random(seed * 997 + i))
+                add(f"{name}#d{seed}-{i}", "Kuantitatif", t["topic"], t["level"], t["stem"], [t["correct"], *t["distractors"]],
+                    t["correct"], t["explanation"], t["shortcut"], sub=t["subtopic"])
+        elif code:
+            pool = [x for x in self.items.values() if x["topic"] == code]
+            fresh = [x for x in pool if x["id"] not in exclude]
+            pool = fresh if len(fresh) >= count else pool
+            pool.sort(key=lambda x: x["id"]); r.shuffle(pool)
+            for x in pool[:count]:
+                p = self.passages.get(x.get("passage_id"))
+                add(x["id"], x["subject"], x["topic"], x["level"], x["stem"], x["options"], x["options"][x["answer_idx"]],
+                    x["explanation"], x["shortcut"], {"id": p["passage_id"], "text": p["text"]} if p else None, sub=x["subtopic"])
         for n_, q in enumerate(out, 1): q["no"] = n_
         return out

@@ -20,6 +20,7 @@ def base():
     threading.Thread(target=s.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{s.server_address[1]}"
     s.shutdown()
+    s.server_close()
 
 
 def _post(base, path, body, hdr=None):
@@ -73,6 +74,7 @@ def test_child_full_flow_with_refresh_resume(base, browser):
 
     page.goto(f"{base}/child/#/beranda"); page.wait_for_selector("text=Sudah dikumpulkan")
     assert not errors, errors
+    page.close()
 
 
 def test_mobile_layout_has_warning_and_no_errors(base, browser):
@@ -85,6 +87,7 @@ def test_mobile_layout_has_warning_and_no_errors(base, browser):
     box = page.locator(".opt").first.bounding_box(); assert box["height"] >= 44
     page.screenshot(path=str(SHOTS / "anak-6-ponsel.png"))
     assert not errors, errors
+    page.close()
 
 
 def test_outside_window_shows_closed_message(base, browser):
@@ -93,3 +96,4 @@ def test_outside_window_shows_closed_message(base, browser):
     page.goto(f"{base}/child/?sim=2026-11-10T10:00"); page.fill("#code", code); page.click("button[type=submit]")
     page.wait_for_selector(".note")
     assert "drill" in page.inner_text(".note").lower()
+    page.close()
