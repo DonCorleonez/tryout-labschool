@@ -115,12 +115,19 @@ class App:
 
     def _session(self, ctx, role):
         tok = ctx["h"].get("x-token", "")
-        r = self.db.execute("SELECT s.*, f.public_ref, f.plan, f.join_window, f.revoked FROM sessions s JOIN families f ON f.id=s.family_id WHERE token_hash=? AND role=?", (sha(tok), role)).fetchone()
+        r = self.db.execute("SELECT s.*, f.public_ref, f.plan, f.join_window, f.created_at AS family_created_at, f.revoked FROM sessions s JOIN families f ON f.id=s.family_id WHERE token_hash=? AND role=?", (sha(tok), role)).fetchone()
         if not r:
             raise Err(401, "belum_masuk")
         if r["revoked"]:
             raise Err(403, "akses_dinonaktifkan", "Minta orang tua menghubungi kami.")
         return r
+
+    def _eligible_plan(self, s) -> str:
+        """Tentukan hak paket dari tanggal pendaftaran akun (<= 8 Des 23:59 WIB = utama; >= 9 Des 00:00 WIB = kejar)."""
+        reg_dt = datetime.fromisoformat(s["family_created_at"])
+        if reg_dt.tzinfo is None:
+            reg_dt = reg_dt.replace(tzinfo=sc.WIB)
+        return "kejar" if reg_dt >= sc.GATE_PRESTASI else "utama"
 
     def _admin(self, ctx):
         if not hmac.compare_digest(ctx["h"].get("x-admin-token", ""), self.admin_token):
@@ -539,12 +546,12 @@ class App:
 
     # ---------- pembayaran ----------
     def order_new(self, c):
-        s = self._session(c, "parent"); plan = "kejar" if c["now"] >= sc.GATE_PRESTASI else "utama"
+        s = self._session(c, "parent"); plan = self._eligible_plan(s)
         if s["plan"] in ("utama", "kejar"): raise Err(409, "paket_sudah_aktif")
         amount = IDR.get(plan)
         if amount is None: raise Err(409, "harga_belum_ditetapkan", "Paket ini belum dibuka.")    # invarian 14: harga dari server, bukan klien
         pend = self.db.execute("SELECT * FROM orders WHERE family_id=? AND status='menunggu' AND payment_url IS NOT NULL ORDER BY id DESC LIMIT 1", (s["family_id"],)).fetchone()
-        if pend and pend["amount_idr"] == amount:                          # klik ganda / kembali dari halaman bayar: pakai invoice yang sama
+        if pend and pend["amount_idr"] == amount and pend["plan"] == plan:    # klik ganda / kembali dari halaman bayar: pakai invoice yang sama
             return {"order": pend["public_ref"], "status": "menunggu", "gateway_ref": pend["gateway_ref"], "plan": pend["plan"], "amount_idr": amount, "payment_url": pend["payment_url"]}
         ref = "ord_" + secrets.token_hex(4)
         cur = self.db.execute("INSERT INTO orders(public_ref,family_id,plan,amount_idr,status,gateway,created_at) VALUES(?,?,?,?,?,?,?)", (ref, s["family_id"], plan, amount, "dibuat", self.gateway.name, iso(c["now"])))
@@ -552,7 +559,7 @@ class App:
         self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (oid, "request_diterima_server", plan, iso(c["now"])))
         email = self.db.execute("SELECT email FROM marketing_leads WHERE family_id=?", (s["family_id"],)).fetchone()["email"]
         try:
-            inv = self.gateway.create_invoice(ref, amount, email, "Paket utama Tryout Labschool", self.base_url + "/api/webhooks/duitku",
+            inv = self.gateway.create_invoice(ref, amount, email, f"Paket {plan} Tryout Labschool", self.base_url + "/api/webhooks/duitku",
                                               self.base_url + "/parent/#/beranda")
         except ig.GatewayError as e:
             self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (oid, "gateway_gagal", str(e)[:200], iso(c["now"])))
@@ -607,9 +614,9 @@ class App:
             self.db.execute("INSERT INTO order_events(order_id,kind,detail,at) VALUES(?,?,?,?)", (o["id"], "webhook_" + st, eid, iso(now)))
             if st == "paid":
                 self.db.execute("UPDATE families SET plan=? WHERE id=?", (o["plan"], o["family_id"]))
-                self.enqueue_email(o["family_id"], "bayar_lunas", f"paid:{o['public_ref']}", "Pembayaran diterima: paket utama aktif",
+                self.enqueue_email(o["family_id"], "bayar_lunas", f"paid:{o['public_ref']}", f"Pembayaran diterima: paket {o['plan']} aktif",
                                    f"Terima kasih. Pembayaran {o['public_ref']} sebesar Rp{o['amount_idr']:,}".replace(",", ".") +
-                                   " sudah kami terima dan paket utama aktif.\n\nTryout terbuka setiap Jumat 17.00 sampai Minggu 16.00. "
+                                   f" sudah kami terima dan paket {o['plan']} aktif.\n\nTryout terbuka setiap Jumat 17.00 sampai Minggu 16.00. "
                                    "Laporan terbit Senin pukul 07.00.\n\nDashboard: " + self.base_url + "/parent/", now)
 
     def playtest_pay(self, c):
@@ -628,10 +635,10 @@ class App:
                 for r in self.db.execute("SELECT * FROM attempts WHERE family_id=? ORDER BY id", (fid,))]
         orders = [{"order": r["public_ref"], "status": r["status"], "amount_idr": r["amount_idr"], "created_at": r["created_at"], "payment_url": r["payment_url"]}
                   for r in self.db.execute("SELECT * FROM orders WHERE family_id=? ORDER BY id DESC LIMIT 5", (fid,))]
-        offer = "kejar" if c["now"] >= sc.GATE_PRESTASI else "utama"
+        offer = self._eligible_plan(s)
         return {"family_ref": s["public_ref"], "plan": s["plan"], "join_window": s["join_window"], "clock": st.kind,
                 "window": st.window.k if st.window else None, "attempts": atts, "orders": orders,
-                "offer": {"plan": offer, "amount_idr": IDR.get(offer), "tryouts": sc.total_for_family(sc.join_window(c["now"]), "utama")},
+                "offer": {"plan": offer, "amount_idr": IDR.get(offer), "tryouts": sc.total_for_family(s["join_window"] or sc.join_window(c["now"]), "utama")},
                 "playtest": self.playtest, "gateway": self.gateway.name}
 
     def parent_reports(self, c):

@@ -48,12 +48,12 @@ def test_landing_renders_and_links_to_register(browser):
         assert "AWAS JEBAKAN" in page.inner_text("#demo-trap")
         page.click("#demo-retry"); page.click(".demo-opt[data-choice='B']")
         assert "benar" in page.inner_text("#demo-fb-title").lower()
-        # Cek modal paywall terpadu (konsisten jendela tersisa & waktu pemesanan, tanpa klaim mutlak seluruh 14 tryout)
+        # Cek modal paywall terpadu (konsisten jendela tersisa & tanggal pendaftaran akun, tanpa klaim mutlak seluruh 14 tryout)
         page.click("#open-paywall"); page.wait_for_selector("#paywall-modal:not([hidden])")
         modal_txt = page.inner_text("#paywall-modal")
         assert "Hingga 14 Tryout" in modal_txt and "Buka seluruh 14 Tryout" not in modal_txt
         assert "jendela yang sudah lewat tidak digulung ulang" in modal_txt
-        assert "pemesanan s.d. 8 Des 2026" in modal_txt and "pemesanan mulai 9 Des 2026" in modal_txt
+        assert "daftar s.d. 8 Des 2026" in modal_txt and "daftar mulai 9 Des 2026" in modal_txt
         page.click("#close-paywall")
         page.click("text=Cek kesiapan anak, gratis"); page.wait_for_selector("text=Daftar dan coba diagnostik gratis")
         assert not errs, errs
@@ -270,29 +270,39 @@ def test_canonical_bank_subjects_and_mobile_portals_in_browser(tmp_path, browser
 
 
 def test_late_joiner_and_cross_cutoff_order_in_browser(browser):
-    """Regresi E2E: daftar 8 Des lalu order mulai 9 Des (Kejar Rp129.000) & akses jendela tersisa (9 tryout)."""
+    """Regresi E2E: hak paket ditentukan tanggal pendaftaran akun (daftar <= 8 Des = Utama Rp99rb meski order >= 9 Des; daftar >= 9 Des = Kejar Rp129rb)."""
     s, base = _serve(True)
-    page = browser.new_page(viewport={"width": 1200, "height": 900}); errs = _watch(page)
+    p1 = browser.new_page(viewport={"width": 1200, "height": 900}); err1 = _watch(p1)
+    p2 = browser.new_page(viewport={"width": 1200, "height": 900}); err2 = _watch(p2)
     try:
-        # 1. Daftar 8 Des 20.00 WIB -> penawaran dashboard sebelum order masih Paket Utama + tanggal pemesanan eksplisit
-        page.goto(base + "/parent/?sim=2026-12-08T20:00#/daftar")
-        page.fill("#name", "Ibu Lintas"); page.fill("#whatsapp", "081277770001")
-        page.fill("#email", "lintas@contoh.id"); page.fill("#pin", "246810")
-        page.check("#consent"); page.click("button[type=submit]")
-        page.wait_for_selector(".code")
-        page.click("text=Saya sudah mencatat kode"); page.wait_for_selector("h1:has-text('Dashboard')")
-        pre_txt = page.inner_text("main")
-        assert "Paket utama" in pre_txt and "Rp99.000" in pre_txt and "pemesanan s.d. 8 Des 2026" in pre_txt
+        # 1. Daftar 8 Des 23:50 WIB lalu baru buka dashboard & order pada 10 Des 10:00 WIB -> tetap Paket Utama Rp99.000
+        p1.goto(base + "/parent/?sim=2026-12-08T23:50#/daftar")
+        p1.fill("#name", "Ibu Pra"); p1.fill("#whatsapp", "081277770001")
+        p1.fill("#email", "pra-e2e@contoh.id"); p1.fill("#pin", "246810")
+        p1.check("#consent"); p1.click("button[type=submit]")
+        p1.wait_for_selector(".code")
+        p1.goto(base + "/parent/?sim=2026-12-10T10:00#/beranda")
+        p1.wait_for_selector("text=Paket utama")
+        txt1 = p1.inner_text("main")
+        assert "Paket utama" in txt1 and "Rp99.000" in txt1 and "9 tryout pada jendela tersisa" in txt1
+        assert "terdaftar s.d. 8 Des 2026" in txt1
+        p1.click("#order"); p1.wait_for_selector("#pay")
+        p1.click("#pay"); p1.wait_for_selector("text=Paket utama aktif.")
 
-        # 2. Melewati 9 Des 00.00 WIB sebelum order -> tawaran beralih ke Paket Kejar Rp129.000 (9 tryout tersisa)
-        page.goto(base + "/parent/?sim=2026-12-10T10:00#/beranda")
-        page.wait_for_selector("text=Paket kejar")
-        post_txt = page.inner_text("main")
-        assert "Paket kejar" in post_txt and "Rp129.000" in post_txt and "9 tryout pada jendela tersisa" in post_txt
-        assert "Pemesanan mulai 9 Des 2026" in post_txt
-        page.click("#order"); page.wait_for_selector("#pay")
-        page.click("#pay"); page.wait_for_selector("text=Paket kejar aktif.")
-        assert not errs, errs
+        # 2. Daftar 9 Des 00:05 WIB -> tawaran Paket Kejar Rp129.000 + aktivasi Paket kejar aktif
+        p2.goto(base + "/parent/?sim=2026-12-09T00:05#/daftar")
+        p2.fill("#name", "Ibu Kejar"); p2.fill("#whatsapp", "081277770002")
+        p2.fill("#email", "kejar-e2e@contoh.id"); p2.fill("#pin", "246810")
+        p2.check("#consent"); p2.click("button[type=submit]")
+        p2.wait_for_selector(".code")
+        p2.click("text=Saya sudah mencatat kode"); p2.wait_for_selector("h1:has-text('Dashboard')")
+        txt2 = p2.inner_text("main")
+        assert "Paket kejar" in txt2 and "Rp129.000" in txt2 and "9 tryout pada jendela tersisa" in txt2
+        assert "terdaftar mulai 9 Des 2026" in txt2
+        p2.click("#order"); p2.wait_for_selector("#pay")
+        p2.click("#pay"); p2.wait_for_selector("text=Paket kejar aktif.")
+        assert not err1 and not err2, (err1, err2)
     finally:
-        page.close()
+        for p in (p2, p1):
+            if p: p.close()
         s.shutdown(); s.server_close()

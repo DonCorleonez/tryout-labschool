@@ -76,7 +76,7 @@ Semua test berikut dijalankan setelah perbaikan QA Gate:
 
 ## 4. Harga Terkunci & Stub yang Dipertahankan (Section 8)
 
-1. **Harga Paket Terkunci (25 Nov 2026 — `public/index.html`, `public/parent/parent.js`, `reference/backend.py`):** **Paket Utama = Rp99.000** (`IDR["utama"] = 99_000`) dan **Paket Kejar = Rp129.000** (`IDR["kejar"] = 129_000`).
+1. **Harga Paket Terkunci (25 Nov 2026 — `public/index.html`, `public/parent/parent.js`, `reference/backend.py`):** **Paket Utama = Rp99.000** (`IDR["utama"] = 99_000`, untuk akun terdaftar s.d. 8 Des 2026 23.59 WIB) dan **Paket Kejar = Rp129.000** (`IDR["kejar"] = 129_000`, untuk akun terdaftar mulai 9 Des 2026 00.00 WIB). Hak paket dan harga mengacu pada tanggal pendaftaran akun (`families.created_at`) di penawaran, pesanan, dan pembayaran.
 2. **Payment Gateway (`reference/integrations.py`):** `SimGateway` + `/api/playtest/orders/{ref}/pay` tetap simulasi; adaptor `DuitkuGateway` tidak memanggil API live.
 3. **Email Transaksional (`reference/integrations.py`):** `LogMailer` mencatat ke tabel `email_outbox`; `ResendMailer` siap pakai tanpa API key di repo.
 4. **Provider AI Runtime (`reference/backend.py` `admin_standin`):** Tetap stand-in aturan deterministik tanpa hardcode API key/provider.

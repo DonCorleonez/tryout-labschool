@@ -410,13 +410,13 @@
     const activeName = h.plan === 'kejar' ? 'Paket kejar' : 'Paket utama';
     const offerName = (h.offer && h.offer.plan === 'kejar') ? 'Paket kejar' : 'Paket utama';
     const cutoffNote = (h.offer && h.offer.plan === 'kejar')
-      ? 'Pemesanan mulai 9 Des 2026 (00.00 WIB) menggunakan tarif Paket Kejar.'
-      : 'Tarif Paket Utama berlaku untuk pemesanan s.d. 8 Des 2026 (pemesanan mulai 9 Des 2026 memakai Paket Kejar Rp129.000).';
+      ? 'Akun terdaftar mulai 9 Des 2026 (00.00 WIB) menggunakan tarif Paket Kejar.'
+      : 'Akun terdaftar s.d. 8 Des 2026 (23.59 WIB) tetap menggunakan tarif Paket Utama Rp99.000.';
     let buy;
     if (paid) {
       buy = `<p class="ok-box"><strong>${esc(activeName)} aktif.</strong> Tryout terbuka setiap Jumat 17.00 sampai Minggu 16.00. Laporan mingguan terbit Senin pukul 07.00.</p>`;
     } else if (h.offer.amount_idr == null) {
-      buy = '<p class="muted">Paket untuk pemesanan mulai 9 Desember sedang disiapkan.</p>';
+      buy = '<p class="muted">Paket untuk pendaftar mulai 9 Desember sedang disiapkan.</p>';
     } else if (h.gateway === 'sim' && !h.playtest) {
       buy = `<p>${esc(offerName)} <strong>${rp(h.offer.amount_idr)}</strong> untuk ${esc(h.offer.tryouts)} tryout pada jendela tersisa sampai hari tes.</p>
         <p class="muted">${esc(cutoffNote)}</p>
