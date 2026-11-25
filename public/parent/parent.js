@@ -407,16 +407,24 @@
     }
 
     const pending = (h.orders || []).find((o) => o.status === 'menunggu');
+    const activeName = h.plan === 'kejar' ? 'Paket kejar' : 'Paket utama';
+    const offerName = (h.offer && h.offer.plan === 'kejar') ? 'Paket kejar' : 'Paket utama';
+    const cutoffNote = (h.offer && h.offer.plan === 'kejar')
+      ? 'Akun terdaftar mulai 9 Des 2026 (00.00 WIB) menggunakan tarif Paket Kejar.'
+      : 'Akun terdaftar s.d. 8 Des 2026 (23.59 WIB) tetap menggunakan tarif Paket Utama Rp99.000.';
     let buy;
     if (paid) {
-      buy = '<p class="ok-box"><strong>Paket utama aktif.</strong> Tryout terbuka setiap Jumat 17.00 sampai Minggu 16.00. Laporan mingguan terbit Senin pukul 07.00.</p>';
+      buy = `<p class="ok-box"><strong>${esc(activeName)} aktif.</strong> Tryout terbuka setiap Jumat 17.00 sampai Minggu 16.00. Laporan mingguan terbit Senin pukul 07.00.</p>`;
     } else if (h.offer.amount_idr == null) {
-      buy = '<p class="muted">Paket untuk pendaftar setelah 9 Desember sedang disiapkan.</p>';
+      buy = '<p class="muted">Paket untuk pendaftar mulai 9 Desember sedang disiapkan.</p>';
     } else if (h.gateway === 'sim' && !h.playtest) {
-      buy = `<p>Paket utama <strong>${rp(h.offer.amount_idr)}</strong> untuk ${esc(h.offer.tryouts)} tryout sampai hari tes.</p>
+      buy = `<p>${esc(offerName)} <strong>${rp(h.offer.amount_idr)}</strong> untuk hingga ${esc(h.offer.tryouts)} tryout yang belum dimulai pada jendela tersisa sampai hari tes.</p>
+        <p class="muted">${esc(cutoffNote)}</p>
         <p class="muted">Pembayaran online segera dibuka. Diagnostik gratis tetap bisa dikerjakan sekarang.</p>`;
     } else {
-      const head = `<p>Paket utama <strong>${rp(h.offer.amount_idr)}</strong> <span class="pill sim">TBD (simulasi)</span> untuk ${esc(h.offer.tryouts)} tryout sampai hari tes.</p>`;
+      const simTag = h.playtest ? ' <span class="pill sim">Simulasi</span>' : '';
+      const head = `<p>${esc(offerName)} <strong>${rp(h.offer.amount_idr)}</strong>${simTag} untuk hingga ${esc(h.offer.tryouts)} tryout yang belum dimulai pada jendela tersisa sampai hari tes.</p>
+        <p class="muted">${esc(cutoffNote)}</p>`;
       if (pending && pending.payment_url) {
         buy = head + `<p class="muted">Ada pesanan yang menunggu pembayaran.</p>
           <a class="btn solid" href="${esc(pending.payment_url)}">Lanjutkan pembayaran</a>

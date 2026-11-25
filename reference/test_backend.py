@@ -207,8 +207,8 @@ def test_webhook_signature_idempotency_and_activation(app):
 
 
 def test_order_after_gate_is_kejar_plan(app, monkeypatch):
-    monkeypatch.setitem(be.IDR, "kejar", 123)               # harga kejar belum ditetapkan pemilik; nilai uji saja
-    r = register(app)
+    monkeypatch.setitem(be.IDR, "kejar", 123)               # nilai uji untuk pendaftar mulai 9 Des
+    r = register(app, "2026-12-12T09:00")
     o, (st, out) = pay(app, r["token"], "2026-12-12T10:00", "e2")
     assert st == 200 and app.db.execute("SELECT plan FROM families").fetchone()["plan"] == "kejar"
 
@@ -316,11 +316,16 @@ def test_order_amount_comes_from_server_price(app):
 
 
 def test_kejar_plan_without_price_is_not_sold(app, monkeypatch):
-    pt1 = _parent(app, "k1@x.co")
-    st1, o1 = call(app, "POST", "/api/parent/orders", {}, token=pt1, t="2026-12-10T10:00")
-    assert st1 == 200 and o1["plan"] == "kejar" and o1["amount_idr"] == 129_000
+    st1, r1 = call(app, "POST", "/api/parent/register",
+                   {"name": "Ibu 1", "whatsapp": "081234567891", "email": "k1@x.co", "consent": True, "pin": "123456"},
+                   t="2026-12-10T09:00")
+    assert st1 == 200
+    sto1, o1 = call(app, "POST", "/api/parent/orders", {}, token=r1["token"], t="2026-12-10T10:00")
+    assert sto1 == 200 and o1["plan"] == "kejar" and o1["amount_idr"] == 129_000
     monkeypatch.setitem(be.IDR, "kejar", None)
-    st2, r2 = call(app, "POST", "/api/parent/register", {"name": "Ibu 2", "whatsapp": "081234567899", "email": "k2@x.co", "consent": True, "pin": "123456"})
+    st2, r2 = call(app, "POST", "/api/parent/register",
+                   {"name": "Ibu 2", "whatsapp": "081234567899", "email": "k2@x.co", "consent": True, "pin": "123456"},
+                   t="2026-12-10T09:00")
     assert st2 == 200
     st, e = call(app, "POST", "/api/parent/orders", {}, token=r2["token"], t="2026-12-10T10:00")
     assert st == 409 and e["error"] == "harga_belum_ditetapkan"
@@ -531,3 +536,46 @@ def test_g20_parent_register_and_relogin_same_device_counts_as_one_slot(app):
     # Perangkat ke-4 ditolak
     st4, e4 = call(app, "POST", "/api/parent/login", {"email": "p-dev@b.co", "pin": "123456"}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_p4"})
     assert st4 == 403 and e4["error"] == "device_limit_tercapai"
+
+
+def test_cutoff_determined_by_registration_date_across_8_and_9_dec(app):
+    # Kasus 1: daftar 8 Des 23:59 WIB (< 9 Des 00:00) lalu cek penawaran, order, & bayar sesudah 9 Des -> tetap Paket Utama Rp99.000
+    st, r1 = call(app, "POST", "/api/parent/register",
+                  {"name": "Ibu Pra Cutoff", "whatsapp": "081234567895", "email": "pra@b.co", "campus": "Cibubur", "track": "Tes", "grade": "6", "consent": True, "pin": "123456"},
+                  t="2026-12-08T23:59")
+    assert st == 200
+    st_h1, h1 = call(app, "GET", "/api/parent/home", token=r1["token"], t="2026-12-10T10:00")
+    assert st_h1 == 200 and h1["offer"]["plan"] == "utama" and h1["offer"]["amount_idr"] == 99_000
+    o1, (st_w1, _) = pay(app, r1["token"], "2026-12-10T10:05", "evt-pra")
+    assert o1["plan"] == "utama" and o1["amount_idr"] == 99_000 and st_w1 == 200
+    assert app.db.execute("SELECT plan FROM families WHERE public_ref=?", (r1["family_ref"],)).fetchone()["plan"] == "utama"
+
+    # Kasus 2: daftar 9 Des 00:00 WIB (>= cutoff) -> Paket Kejar Rp129.000 dengan jendela tersisa (9 tryout)
+    st2, r2 = call(app, "POST", "/api/parent/register",
+                   {"name": "Ibu Pas Cutoff", "whatsapp": "081234567896", "email": "pas@b.co", "campus": "Cibubur", "track": "Tes", "grade": "6", "consent": True, "pin": "123456"},
+                   t="2026-12-09T00:00")
+    assert st2 == 200
+    st_h2, h2 = call(app, "GET", "/api/parent/home", token=r2["token"], t="2026-12-09T00:05")
+    assert st_h2 == 200 and h2["offer"]["plan"] == "kejar" and h2["offer"]["amount_idr"] == 129_000 and h2["offer"]["tryouts"] == 9
+    o2, (st_w2, _) = pay(app, r2["token"], "2026-12-09T00:10", "evt-pas")
+    assert o2["plan"] == "kejar" and o2["amount_idr"] == 129_000 and st_w2 == 200
+    assert app.db.execute("SELECT plan FROM families WHERE public_ref=?", (r2["family_ref"],)).fetchone()["plan"] == "kejar"
+
+
+def test_offer_counts_only_unstarted_tryouts_in_open_or_future_windows(app):
+    r = register(app, "2026-11-04T10:00")
+    token = r["token"]
+    def offer(at):
+        status, home = call(app, "GET", "/api/parent/home", token=token, t=at)
+        assert status == 200
+        return home["offer"]
+
+    assert offer("2026-11-04T10:00")["tryouts"] == 14
+    child_token = child(app, r["child_code"], "2026-11-04T10:00")
+    run_tryout(app, child_token, "DIAG", "2026-11-04T10:00")
+    assert offer("2026-11-04T10:00")["tryouts"] == 13
+    later = offer("2026-12-10T10:00")
+    assert (later["plan"], later["amount_idr"], later["tryouts"]) == ("utama", 99_000, 9)
+    assert offer("2026-12-13T15:59")["tryouts"] == 9
+    assert offer("2026-12-13T16:00")["tryouts"] == 8
+    assert offer("2027-01-24T16:00")["tryouts"] == 0
