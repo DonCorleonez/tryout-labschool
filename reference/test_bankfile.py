@@ -148,8 +148,7 @@ def test_chatgpt_raw_batch_01_renumbers_and_validates(tmp_path):
     res = ib.import_batch(raw_src)
     assert res["renumbered"] == 56
     assert res["items_loaded"] == 56 and res["passages_loaded"] == 4 and res["rejected_count"] == 0
-    assert len(res["warnings"]) == 4
-    assert all("BAC-P-C00" in w and "target 120-250" in w for w in res["warnings"])
+    assert res["warnings"] == []
 
     staged = tmp_path / "staged.json"
     rb.renumber_batch_file(raw_src, staged)
@@ -158,4 +157,26 @@ def test_chatgpt_raw_batch_01_renumbers_and_validates(tmp_path):
     topic_counts = Counter(x["topic"] for x in b.items.values())
     assert subj_counts == {"Pemahaman Bacaan": 4, "Verbal": 20, "IPA": 20, "IPS": 12}
     assert topic_counts["BAC-GAG"] == 4
-    assert all(p.get("needs_passage_revision") is True for p in b.passages.values())
+    assert all(not p.get("needs_passage_revision") for p in b.passages.values())
+
+
+def test_short_passage_in_chatgpt_raw_flagged_without_changing_subject(tmp_path):
+    import import_batch as ib
+    short_raw = [{
+        "id": "bi-gu-short",
+        "subject": "Bahasa Indonesia",
+        "topic": "Gagasan Utama",
+        "level": 1,
+        "q": "Pak Rudi menyiram tanaman setiap pagi agar subur. Gagasan utama paragraf tersebut adalah ...",
+        "opts": ["Cara merawat tanaman.", "Pak Rudi bangun pagi.", "Daun kering dibuang.", "Bunga lebat indah."],
+        "ans": 0,
+        "penjelasan": "Semua kalimat menjelaskan perawatan tanaman agar tumbuh subur.",
+        "cara_cepat": "Cari kalimat yang merangkum keseluruhan isi paragraf."
+    }]
+    src = tmp_path / "short_raw.json"
+    dest = tmp_path / "dest_bank"
+    src.write_text(json.dumps(short_raw, ensure_ascii=False), encoding="utf-8")
+    res = ib.import_batch(src, dest_dir=dest)
+    assert res["items_loaded"] == 1 and res["passages_loaded"] == 1 and res["rejected_count"] == 0
+    assert len(res["warnings"]) == 1 and "target 120-250" in res["warnings"][0]
+    assert not dest.exists()  # batch dengan peringatan panjang bacaan tidak dipromosikan ke dest_dir

@@ -26,7 +26,7 @@ PIN_ITER = 120_000
 FREE_DIAG_ANYTIME = True         # kebijakan diagnostik gratis A (kapan saja) / B (hanya di jendela)
 MAX_LOGIN_FAILS = 5              # per IP per 10 menit
 MAX_DEVICES_PER_FAMILY = 3       # G-20: batas maksimal perangkat unik aktif per role/keluarga
-IDR = {"utama": 499_000, "kejar": None}   # harga = keputusan pemilik (2 Nov 2026: paket utama Rp499.000; mode kejar belum ditetapkan)
+IDR = {"utama": 99_000, "kejar": 129_000}   # harga = keputusan pemilik (25 Nov 2026: paket utama Rp99.000; paket kejar Rp129.000)
 
 iso = lambda d: d.isoformat()
 sha = lambda s: hashlib.sha256(s.encode()).hexdigest()

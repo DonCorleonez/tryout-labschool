@@ -72,7 +72,7 @@ def test_register_shows_code_once_then_login_buy_playtest(browser):
         page.screenshot(path=str(SHOTS / "ortu-1-kode.png"))
         page.click("text=Saya sudah mencatat kode"); page.wait_for_selector("h1:has-text('Dashboard')")
         assert code not in page.inner_text("main")                       # kode tidak tampil lagi
-        assert "Rp499.000" in page.inner_text("main")
+        assert "Rp99.000" in page.inner_text("main")
         page.click("#order"); page.wait_for_selector("#pay")
         page.click("#pay"); page.wait_for_selector("text=Paket utama aktif")
         page.screenshot(path=str(SHOTS / "ortu-2-dashboard.png"), full_page=True)

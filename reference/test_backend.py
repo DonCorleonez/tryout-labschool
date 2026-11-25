@@ -311,20 +311,25 @@ def _parent(app, email="p4@x.co"):
 def test_order_amount_comes_from_server_price(app):
     pt = _parent(app)
     st, o = call(app, "POST", "/api/parent/orders", {"amount_idr": 1}, token=pt)          # harga kiriman klien diabaikan
-    assert st == 200 and o["amount_idr"] == 499_000 and o["plan"] == "utama"
-    assert app.db.execute("SELECT amount_idr FROM orders WHERE public_ref=?", (o["order"],)).fetchone()[0] == 499_000
+    assert st == 200 and o["amount_idr"] == 99_000 and o["plan"] == "utama"
+    assert app.db.execute("SELECT amount_idr FROM orders WHERE public_ref=?", (o["order"],)).fetchone()[0] == 99_000
 
 
-def test_kejar_plan_without_price_is_not_sold(app):
-    pt = _parent(app, "k@x.co")
-    st, e = call(app, "POST", "/api/parent/orders", {}, token=pt, t="2026-12-10T10:00")
+def test_kejar_plan_without_price_is_not_sold(app, monkeypatch):
+    pt1 = _parent(app, "k1@x.co")
+    st1, o1 = call(app, "POST", "/api/parent/orders", {}, token=pt1, t="2026-12-10T10:00")
+    assert st1 == 200 and o1["plan"] == "kejar" and o1["amount_idr"] == 129_000
+    monkeypatch.setitem(be.IDR, "kejar", None)
+    st2, r2 = call(app, "POST", "/api/parent/register", {"name": "Ibu 2", "whatsapp": "081234567899", "email": "k2@x.co", "consent": True, "pin": "123456"})
+    assert st2 == 200
+    st, e = call(app, "POST", "/api/parent/orders", {}, token=r2["token"], t="2026-12-10T10:00")
     assert st == 409 and e["error"] == "harga_belum_ditetapkan"
 
 
 def test_parent_home_and_playtest_pay_activates_once(app):
     pt = _parent(app, "h@x.co")
     st, h = call(app, "GET", "/api/parent/home", token=pt)
-    assert st == 200 and h["plan"] == "free" and h["offer"]["amount_idr"] == 499_000 and h["playtest"]
+    assert st == 200 and h["plan"] == "free" and h["offer"]["amount_idr"] == 99_000 and h["playtest"]
     o = call(app, "POST", "/api/parent/orders", {}, token=pt)[1]
     assert call(app, "POST", f"/api/playtest/orders/{o['order']}/pay", token=pt)[0] == 200
     h = call(app, "GET", "/api/parent/home", token=pt)[1]

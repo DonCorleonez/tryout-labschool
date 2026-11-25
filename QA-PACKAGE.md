@@ -52,7 +52,7 @@ Sebelum menulis kode baru, kondisi repo `DonCorleonez/tryout-labschool` (`main` 
 - `reference/import_batch.py`: Smoke importer yang menjalankan renumbering lalu validasi penuh lewat `bankfile.Bank.load`.
 - `reference/bankfile.py`, `reference/bank.py`: Dukungan loader `*.json` (`batch_*.json`), penolakan otomatis kata `"Labschool"` di soal/bacaan, dan `build_drill` / `get_drill_questions` sesuai topik.
 - `reference/testdata/batch_01.json`: **56 soal non-Math** orisinal Kurikulum Merdeka Fase C (4 bacaan 120–250 kata, 14 Pemahaman Bacaan, 14 Verbal, 16 IPA, 12 IPS; sebaran kunci 25% A/B/C/D) + **46 template Math** deterministik mencakup 13 topik `MAT-*` (lolos 1.000 seed, 0 ditolak, 0 peringatan).
-- `reference/testdata/batch_01_chatgpt_raw.json`: Salinan file asli ChatGPT 56 soal non-Math (`bi-kb-01`..`vb-si-06`). Setelah perbaikan validator tanda baca (`VER-BKU`) di `reference/bankfile.py` serta penyeimbang kunci (`25%` A/B/C/D) di `reference/renumber_bank.py`, `python import_batch.py testdata/batch_01_chatgpt_raw.json` mempertahankan klasifikasi asli mata uji (**56/56 lolos, 0 ditolak, 4 bacaan: `Pemahaman Bacaan 4`, `Verbal 20`, `IPA 20`, `IPS 12`**) serta menandai 4 bacaan pendek `< 120` kata (`BAC-P-C001..004`) dengan peringatan panjang bacaan + flag `needs_passage_revision` untuk ekspansi wacana tanpa memindahkan mata uji.
+- `reference/testdata/batch_01_chatgpt_raw.json`: Salinan file asli ChatGPT 56 soal non-Math (`bi-kb-01`..`vb-si-06`) dengan 4 wacana `bi-gu-01..04` yang sudah diperluas menjadi 140–162 kata. `python import_batch.py testdata/batch_01_chatgpt_raw.json` lolos bersih **56/56 butir, 4 bacaan (`Pemahaman Bacaan 4`, `Verbal 20`, `IPA 20`, `IPS 12`), 0 ditolak, 0 peringatan**. Guard untuk bacaan pendek `< 120` kata tetap diuji terpisah di `test_short_passage_in_chatgpt_raw_flagged_without_changing_subject`.
 
 ---
 
@@ -62,22 +62,21 @@ Semua test berikut dijalankan setelah perbaikan QA Gate:
 
 | Suite | Perintah | Hasil | Target Minimum |
 |---|---|---|---|
-| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **180/180 lulus** | 171/171 |
+| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **181/181 lulus** | 171/171 |
 | **Real-HTTP Integration** | `cd reference && python -m pytest test_server.py -q` | **22/22 lulus** | 22/22 |
 | **Pen-Test & Anti-Clone** | `cd reference && python -m pytest test_pentest.py -q` | **21/21 lulus** | 21/21 |
-| **Playwright E2E & Click-Checks** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **7/7 lulus** (termasuk dalam 180) | 6/6 + human click-checks |
+| **Playwright E2E & Click-Checks** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **7/7 lulus** (termasuk dalam 181) | 6/6 + human click-checks |
 | **Simulasi Musim & Persona** | `cd reference && python sim_check.py` | **3345/3345 checks OK** | 1991/1992 |
 | **Frontend JS Runner** | `node frontend/runner.test.js` | **6/6 lulus** | 6/6 |
 | **JS Syntax Check** | `node --check public/js/*.js public/child/child.js public/parent/parent.js` | **5/5 lulus (0 galat)** | — |
 | **Smoke Import `batch_01.json`** | `cd reference && python import_batch.py testdata/batch_01.json` | **56 non-Math + 46 Math templates lolos (0 ditolak, 0 peringatan)** | — |
-| **Smoke Import `batch_01_chatgpt_raw.json`** | `cd reference && python import_batch.py testdata/batch_01_chatgpt_raw.json` | **56/56 lolos (0 ditolak, 4 bacaan `BAC-P-C001..004` ditandai revisi panjang < 120 kata)** | — |
+| **Smoke Import `batch_01_chatgpt_raw.json`** | `cd reference && python import_batch.py testdata/batch_01_chatgpt_raw.json` | **56/56 lolos, 4 bacaan 120–250 kata (0 ditolak, 0 peringatan)** | — |
 
 ---
 
-## 4. Stub yang Dipertahankan (Section 8)
+## 4. Harga Terkunci & Stub yang Dipertahankan (Section 8)
 
-Seluruh item berikut sengaja tetap berbentuk stub sesuai Section 8 dan ditandai di kode:
-1. **Harga Paket (`public/index.html`, `public/parent/parent.js`, `reference/backend.py`):** Landing menampilkan label `TBD`; backend mempertahankan `IDR["utama"] = 499_000` untuk kompatibilitas test playtest/P4 dengan label UI `TBD (simulasi)` dan `IDR["kejar"] = None`.
+1. **Harga Paket Terkunci (25 Nov 2026 — `public/index.html`, `public/parent/parent.js`, `reference/backend.py`):** **Paket Utama = Rp99.000** (`IDR["utama"] = 99_000`) dan **Paket Kejar = Rp129.000** (`IDR["kejar"] = 129_000`).
 2. **Payment Gateway (`reference/integrations.py`):** `SimGateway` + `/api/playtest/orders/{ref}/pay` tetap simulasi; adaptor `DuitkuGateway` tidak memanggil API live.
 3. **Email Transaksional (`reference/integrations.py`):** `LogMailer` mencatat ke tabel `email_outbox`; `ResendMailer` siap pakai tanpa API key di repo.
 4. **Provider AI Runtime (`reference/backend.py` `admin_standin`):** Tetap stand-in aturan deterministik tanpa hardcode API key/provider.

@@ -28,7 +28,7 @@ def import_batch(batch_path: Path, existing_dir: Path | None = None, dest_dir: P
             "renumbered": stats["renumbered"],
             "report": b.report(),
         }
-        if dest_dir and len(b.rejected) == 0:
+        if dest_dir and len(b.rejected) == 0 and len(b.warnings) == 0:
             dest_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(staged, dest_dir / batch_path.name)
         return summary
