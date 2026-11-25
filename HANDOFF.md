@@ -63,3 +63,8 @@ Sumber kebenaran kode sejak 2 Nov 2026 = repo ini. Dokumen Drive `impl-build/HAN
 - Review pasca-submit kini membawa subject/topic/subtopic; halaman hasil anak menampilkan "Yang perlu dilatih lagi" per mata uji dan topik, plus label mata uji › topik › subtopik di tiap soal.
 - `docs/PROMPT-CHATGPT-bank-soal.md` v2: referensi dipakai untuk tipe/tingkat/gaya, soal baru bervariasi (bukan salin/parafrase dekat buku berbayar), bidang `ref_tipe`, target volume ±30% cadangan (≥170 Bacaan, ≥170 Verbal, ≥230 IPA, ≥110 IPS, ≥80 template MAT), kiriman ≤25 butir per jawaban.
 - Tes: 130 Python + 6 JS lulus.
+
+### 25 Nov — perbaikan temuan QA template matematika (`qa-template-math.patch`)
+- `mat_14_psn_bagian` memilih persentase yang menghasilkan jumlah siswa bulat (`tot * p % 100 == 0`); `mat_06_fpb_dua` menjelaskan faktor persekutuan yang membagi kedua bilangan.
+- Regresi memeriksa seluruh kombinasi persentase yang valid dan masing-masing 1.000 seed untuk kedua template (`test_percent_template_all_valid_combinations_and_seed_15` dan `test_fpb_template_hint_and_answers`).
+- Diverifikasi penuh dengan Chromium Playwright tersedia: seluruh **183 tes Python** (termasuk 7 tes E2E browser Playwright), **3.345 checks simulasi**, dan **6 tes JS** lulus sebelum commit ke `feat/neon-redesign-v1` (PR #1 masih menunggu review visual & sertifikasi QA independen).

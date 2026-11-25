@@ -180,3 +180,51 @@ def test_short_passage_in_chatgpt_raw_flagged_without_changing_subject(tmp_path)
     assert res["items_loaded"] == 1 and res["passages_loaded"] == 1 and res["rejected_count"] == 0
     assert len(res["warnings"]) == 1 and "target 120-250" in res["warnings"][0]
     assert not dest.exists()  # batch dengan peringatan panjang bacaan tidak dipromosikan ke dest_dir
+
+
+def test_percent_template_all_valid_combinations_and_seed_15():
+    import re
+    templates = {}
+    source = json.loads((HERE / "testdata/batch_01.json").read_text())["templates_code"]
+    exec(compile(source, "batch_01 templates", "exec"), templates)
+    generate = templates["mat_14_psn_bagian"]
+
+    class Choose:
+        def __init__(self, total, percent):
+            self.choices = iter((total, percent))
+
+        def choice(self, options):
+            selected = next(self.choices)
+            assert selected in options
+            return selected
+
+    for total in (40, 50, 80, 100, 120):
+        for percent in (15, 20, 25, 30, 40):
+            if total * percent % 100:
+                continue
+            result = generate(Choose(total, percent))
+            assert f"{total} siswa" in result["stem"]
+            assert f"{percent}%" in result["stem"]
+            assert int(result["correct"]) * 100 == total * percent
+            assert not bf.validate_template_output(result)
+
+    for seed in range(1000):
+        result = generate(random.Random(seed))
+        total, percent = map(int, re.search(r"Dari (\d+) siswa.*sebanyak (\d+)%", result["stem"]).groups())
+        assert int(result["correct"]) * 100 == total * percent
+        assert not bf.validate_template_output(result)
+
+
+def test_fpb_template_hint_and_answers():
+    import math
+    import re
+    templates = {}
+    source = json.loads((HERE / "testdata/batch_01.json").read_text())["templates_code"]
+    exec(compile(source, "batch_01 templates", "exec"), templates)
+    generate = templates["mat_06_fpb_dua"]
+    for seed in range(1000):
+        result = generate(random.Random(seed))
+        a, b = map(int, re.search(r"dari (\d+) dan (\d+)", result["stem"]).groups())
+        assert int(result["correct"]) == math.gcd(a, b)
+        assert "membagi kedua bilangan" in result["shortcut"]
+        assert not bf.validate_template_output(result)

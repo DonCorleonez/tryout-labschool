@@ -62,10 +62,10 @@ Semua test berikut dijalankan setelah perbaikan QA Gate:
 
 | Suite | Perintah | Hasil | Target Minimum |
 |---|---|---|---|
-| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **181/181 lulus** | 171/171 |
+| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **183/183 lulus** | 171/171 |
 | **Real-HTTP Integration** | `cd reference && python -m pytest test_server.py -q` | **22/22 lulus** | 22/22 |
 | **Pen-Test & Anti-Clone** | `cd reference && python -m pytest test_pentest.py -q` | **21/21 lulus** | 21/21 |
-| **Playwright E2E & Click-Checks** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **7/7 lulus** (termasuk dalam 181) | 6/6 + human click-checks |
+| **Playwright E2E & Click-Checks** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **7/7 lulus** (termasuk dalam 183) | 6/6 + human click-checks |
 | **Simulasi Musim & Persona** | `cd reference && python sim_check.py` | **3345/3345 checks OK** | 1991/1992 |
 | **Frontend JS Runner** | `node frontend/runner.test.js` | **6/6 lulus** | 6/6 |
 | **JS Syntax Check** | `node --check public/js/*.js public/child/child.js public/parent/parent.js` | **5/5 lulus (0 galat)** | — |
