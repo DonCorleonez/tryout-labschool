@@ -510,3 +510,19 @@ def test_g20_same_user_agent_four_device_ids_blocked_and_relogin_allowed(app):
     # Perangkat ke-4 unik ditolak walau User-Agent identik
     st4, e4 = call(app, "POST", "/api/child/login", {"code": r["child_code"]}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_browser_4"})
     assert st4 == 403 and e4["error"] == "device_limit_tercapai"
+
+
+def test_g20_parent_register_and_relogin_same_device_counts_as_one_slot(app):
+    same_ua = "Mozilla/5.0 Chrome/120.0"
+    st, r = call(app, "POST", "/api/parent/register",
+                 {"name": "Ibu Uji", "whatsapp": "081234567890", "email": "p-dev@b.co", "campus": "Cibubur", "track": "Tes", "grade": "6", "consent": True, "pin": "123456"},
+                 headers={"User-Agent": same_ua, "X-Device-Id": "dev_p1"})
+    assert st == 200 and r["token"]
+    # Login ulang di perangkat pendaftaran dev_p1 tetap terhitung 1 slot
+    assert call(app, "POST", "/api/parent/login", {"email": "p-dev@b.co", "pin": "123456"}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_p1"})[0] == 200
+    # Perangkat ke-2 dan ke-3 yang sah tetap diterima (total 3 slot: dev_p1, dev_p2, dev_p3)
+    assert call(app, "POST", "/api/parent/login", {"email": "p-dev@b.co", "pin": "123456"}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_p2"})[0] == 200
+    assert call(app, "POST", "/api/parent/login", {"email": "p-dev@b.co", "pin": "123456"}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_p3"})[0] == 200
+    # Perangkat ke-4 ditolak
+    st4, e4 = call(app, "POST", "/api/parent/login", {"email": "p-dev@b.co", "pin": "123456"}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_p4"})
+    assert st4 == 403 and e4["error"] == "device_limit_tercapai"

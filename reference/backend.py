@@ -167,9 +167,7 @@ class App:
         fid = cur.lastrowid
         self.db.execute("INSERT INTO marketing_leads(family_id,parent_name,whatsapp,email,campus,track,grade,consent_at) VALUES(?,?,?,?,?,?,?,?)",
                         (fid, j["name"], j["whatsapp"], j["email"], j.get("campus"), j.get("track"), j.get("grade"), iso(c["now"])))
-        tok = secrets.token_urlsafe(24)
-        dev = (c["h"].get("x-device-id") or c["h"].get("user-agent") or "").strip()[:160] or "default"
-        self.db.execute("INSERT INTO sessions VALUES(?,?,?,?,?,?)", (sha(tok), fid, "parent", dev, iso(c["now"]), iso(c["now"])))
+        tok = self._register_session(fid, "parent", c)
         self.enqueue_email(fid, "selamat_datang", f"welcome:{ref}", "Akun Tryout Labschool sudah aktif",
                            "Akun Anda sudah aktif.\n\nAnak bisa mengerjakan diagnostik gratis kapan saja di " + self.base_url + "/child/ "
                            "dengan kode siswa yang tampil saat pendaftaran. Demi keamanan, kode itu tidak kami kirim lewat email.\n\n"
