@@ -35,8 +35,17 @@ def test_landing_renders_and_links_to_register(browser):
     try:
         page = browser.new_page(viewport={"width": 1366, "height": 900}); errs = _watch(page)
         page.goto(base + "/")
-        assert "499.000" in page.inner_text("#harga") and "keluarga" not in page.inner_text("body").lower()
+        assert "TBD" in page.inner_text("#harga") and "keluarga" not in page.inner_text("body").lower()
         assert page.locator(".weeks li").count() == 13 and page.locator(".weeks li.now").count() <= 1
+        # Cek demo interaktif 1 soal (salah -> AWAS JEBAKAN + CARA CEPAT; benar -> kartu hijau)
+        page.click(".demo-opt[data-choice='A']")
+        page.wait_for_selector("#demo-trap:not([hidden])")
+        assert "AWAS JEBAKAN" in page.inner_text("#demo-trap")
+        page.click("#demo-retry"); page.click(".demo-opt[data-choice='B']")
+        assert "benar" in page.inner_text("#demo-fb-title").lower()
+        # Cek modal paywall terpadu
+        page.click("#open-paywall"); page.wait_for_selector("#paywall-modal:not([hidden])")
+        page.click("#close-paywall")
         page.click("text=Cek kesiapan anak, gratis"); page.wait_for_selector("text=Daftar dan coba diagnostik gratis")
         assert not errs, errs
     finally:
@@ -81,5 +90,81 @@ def test_production_mode_has_no_fake_pay_button(browser):
         page.wait_for_selector("text=Pembayaran online segera dibuka")
         assert page.locator("#order, #pay").count() == 0
         assert not errs, errs
+    finally:
+        s.shutdown()
+
+
+def test_full_end_to_end_daftar_tryout_report_drill_buku_salah_and_mobile(browser):
+    """Acceptance 4: alur daftar -> tryout -> report -> drill -> Buku Salah end-to-end + cek HP 375px."""
+    import json, urllib.request
+    SHOTS.mkdir(parents=True, exist_ok=True)
+    s, base = _serve(True)
+    try:
+        # 1. Daftar orang tua & ambil kode akses
+        page = browser.new_page(viewport={"width": 1280, "height": 900}); errs = _watch(page)
+        page.goto(base + "/parent/?sim=2026-11-04T10:00#/daftar")
+        page.fill("#name", "Ibu E2E"); page.fill("#whatsapp", "081299990001")
+        page.fill("#email", "full@contoh.id"); page.fill("#pin", "246810")
+        page.select_option("#campus", "Cibubur"); page.select_option("#track", "Jalur Tes"); page.select_option("#grade", "6")
+        page.check("#consent"); page.click("button[type=submit]")
+        page.wait_for_selector(".code")
+        code = page.inner_text(".code")
+        assert "LAB-" + code in page.inner_text("main")
+        page.click("text=Saya sudah mencatat kode"); page.wait_for_selector("h1:has-text('Dashboard')")
+        page.click("#order"); page.wait_for_selector("#pay"); page.click("#pay")
+        page.wait_for_selector("text=Paket utama aktif")
+
+        # 2. Anak login pakai LAB-XXXX-XXXX di jendela tryout -> kerjakan DIAG -> hasil (bintang + XP + level)
+        cpage = browser.new_page(viewport={"width": 1280, "height": 860}); cerrs = _watch(cpage)
+        cpage.goto(base + "/child/?sim=2026-11-06T18:00")
+        cpage.fill("#code", "LAB-" + code); cpage.click("button[type=submit]")
+        cpage.wait_for_selector("text=Diagnostik")
+        cpage.click("[data-start=DIAG]"); cpage.wait_for_selector(".opts")
+        cpage.click(".opt[data-i='0']"); cpage.click("#grid"); cpage.wait_for_selector("#g-check")
+        cpage.click("#g-check"); cpage.wait_for_selector("#send"); cpage.click("#send")
+        cpage.wait_for_selector("text=Tryout terkumpul")
+        cpage.screenshot(path=str(SHOTS / "e2e-child-hasil.png"), full_page=True)
+        assert "XP" in cpage.inner_text("main") and "Level" in cpage.inner_text("header")
+
+        # 3. Proses stand-in analisis admin (Minggu 22.00)
+        req = urllib.request.Request(base + "/api/admin/analysis/standin", data=b"{}",
+                                     headers={"Content-Type": "application/json", "X-Admin-Token": "dev-admin", "X-Sim-Time": "2026-11-08T22:00"}, method="POST")
+        assert json.loads(urllib.request.urlopen(req).read())["diproses"] == 1
+
+        # 4. Senin: Anak kerjakan drill & buka Buku Salah
+        cpage.goto(base + "/child/?sim=2026-11-09T10:00#/drill")
+        cpage.wait_for_selector("button:has-text('Mulai Drill')")
+        cpage.click("button:has-text('Mulai Drill')"); cpage.wait_for_selector(".opts")
+        for _ in range(5):
+            cpage.click(".opt[data-i='0']")
+            if cpage.locator("#d-next").count():
+                cpage.click("#d-next")
+            else:
+                cpage.click("#d-finish"); break
+        cpage.wait_for_selector("text=Drill Selesai!")
+        cpage.goto(base + "/child/?sim=2026-11-09T10:05#/buku-salah")
+        cpage.wait_for_selector("text=Buku Salah")
+        assert "Cara cepat" in cpage.inner_text("main") or "CARA CEPAT" in cpage.inner_text("main")
+
+        # 5. Senin 07.05: Orang tua buka Laporan 60-Detik, Buku Salah Cetak, & Jalur Prestasi
+        page.goto(base + "/parent/?sim=2026-11-09T07:05#/beranda")
+        page.wait_for_selector("text=Laporan Kesiapan Siswa")
+        rep_text = page.inner_text("main")
+        assert "tryout dikerjakan" in rep_text.lower() and "konsistensi drill" in rep_text.lower()
+        assert "bintang" not in rep_text.lower() and "xp" not in rep_text.lower() and "dijamin lolos" not in rep_text.lower()
+        page.screenshot(path=str(SHOTS / "e2e-parent-report.png"), full_page=True)
+        page.click("#tab-buku-salah"); page.wait_for_selector("text=Buku Salah Cetak")
+        page.click("#tab-prestasi"); page.wait_for_selector("text=Jalur Prestasi")
+        page.fill("#proof-ref", "CERT-2026-E2E"); page.click("button[type=submit]")
+        page.wait_for_selector("#prestasi-code")
+        assert "TBD" in page.inner_text("main")
+
+        # 6. Cek tampilan HP 375px (landing + parent report) tidak meluber horizontal
+        mpage = browser.new_page(viewport={"width": 375, "height": 812}); merrs = _watch(mpage)
+        mpage.goto(base + "/")
+        overflow_land = mpage.evaluate("document.documentElement.scrollWidth - window.innerWidth")
+        assert overflow_land <= 2, f"Landing mobile overflow: {overflow_land}"
+        mpage.screenshot(path=str(SHOTS / "e2e-mobile-landing.png"), full_page=True)
+        assert not errs and not cerrs and not merrs, (errs, cerrs, merrs)
     finally:
         s.shutdown()

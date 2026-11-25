@@ -116,7 +116,11 @@ def make_handler(app: App, cfg: Config, lock: threading.Lock):
 
         def _api(self, path):
             n = int(self.headers.get("Content-Length") or 0)
-            if n > MAX_BODY: return self._json(413, {"error": "terlalu_besar"})
+            if n > MAX_BODY:
+                self.close_connection = True
+                if n <= MAX_BODY * 2:
+                    self.rfile.read(n)
+                return self._json(413, {"error": "terlalu_besar"})
             body = self.rfile.read(n) if n else b""
             hdrs = dict(self.headers.items())
             if not cfg.playtest: hdrs = {k: v for k, v in hdrs.items() if k.lower() != "x-sim-time"}

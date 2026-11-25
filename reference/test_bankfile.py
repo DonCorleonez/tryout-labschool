@@ -108,3 +108,33 @@ def test_backend_uses_file_bank_and_scores_by_its_keys():
 def test_stub_used_when_no_bank_configured():
     bank.configure(None)
     assert len(bank.get_questions(1)) == 12
+
+
+def test_forbidden_labschool_word_rejected():
+    it = {"id": "IPA-FOT-L1-0001", "version": 1, "subject": "IPA", "topic": "IPA-FOT", "subtopic": "Fotosintesis",
+          "level": 1, "type": "pg4", "stem": "Siswa Labschool mengamati daun hijau ...", "options": ["A", "B", "C", "D"],
+          "answer_idx": 0, "explanation": "Penjelasan cukup panjang untuk soal ini.", "shortcut": "Cara cepat cukup panjang.", "est_seconds": 45, "image": None}
+    assert any("Labschool" in e for e in bf.validate_item(it, set()))
+
+
+def test_renumber_bank_avoids_existing_collisions(tmp_path):
+    import renumber_bank as rb
+    ex = tmp_path / "existing"; ex.mkdir()
+    (ex / "old.jsonl").write_text(json.dumps({"id": "IPA-FOT-L1-0005", "topic": "IPA-FOT", "level": 1}) + "\n")
+    items = [{"id": "IPA-FOT-L1-0001", "topic": "IPA-FOT", "level": 1}, {"id": "IPA-FOT-L1-0002", "topic": "IPA-FOT", "level": 1}]
+    ren, stats = rb.renumber_items(items, existing_dir=ex)
+    assert stats["renumbered"] == 2 and [x["id"] for x in ren] == ["IPA-FOT-L1-0006", "IPA-FOT-L1-0007"]
+
+
+def test_smoke_import_batch_01_loads_56_items_and_46_templates():
+    import import_batch as ib
+    res = ib.import_batch(HERE / "testdata" / "batch_01.json")
+    assert res["items_loaded"] == 56 and res["templates_loaded"] == 46 and res["rejected_count"] == 0 and res["passages_loaded"] == 4
+
+
+def test_batch_01_builds_full_format_tryout_and_drills():
+    b = bf.Bank.load(HERE / "testdata")
+    to = b.build_tryout(42)
+    assert len(to) == 40 and all("Labschool" not in json.dumps(q) for q in to)
+    dr = b.build_drill("Pecahan", 7, count=5)
+    assert len(dr) == 5 and all(q["topic"] == "Pecahan" for q in dr)
