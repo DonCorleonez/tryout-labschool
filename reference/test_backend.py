@@ -472,3 +472,41 @@ def test_prestasi_claim_stub_and_duplicate_proof_rejected(app):
     assert st1 == 200 and p1["discount_percent"] == "TBD" and p1["discount_code"].startswith("PRESTASI-")
     st2, p2 = call(app, "POST", "/api/parent/prestasi", {"proof_ref": "SURAT-PRESTASI-99"}, token=r2["token"])
     assert st2 == 409 and p2["error"] == "bukti_sudah_dipakai"
+
+
+def test_drill_finish_ignores_client_score_and_computes_on_server(app):
+    _, ct = full_family(app)
+    s = run_tryout(app, ct, "TO2-1", "2026-11-14T10:00")
+    call(app, "POST", f"/api/child/attempts/{s['attempt']}/submit", {"answers": {}}, token=ct, t="2026-11-14T10:30")
+    call(app, "POST", "/api/admin/analysis/standin", admin=True, t="2026-11-16T05:00")
+    d = call(app, "GET", "/api/child/drills", token=ct, t="2026-11-16T10:00")[1]["drills"][0]
+    aid = d["assignment"]
+
+    # Sesi 1: klien mengirim correct=5, total=5 tanpa answers -> server wajib hitung 0/5 dan base_xp=0
+    call(app, "GET", f"/api/child/drills/{aid}/sessions/1/start", token=ct, t="2026-11-16T10:05")
+    st1, f1 = call(app, "POST", f"/api/child/drills/{aid}/sessions/1/finish", {"correct": 5, "total": 5}, token=ct, t="2026-11-16T10:06")
+    assert st1 == 200 and f1["correct"] == 0 and f1["total"] == 5
+    assert f1["gamification"]["base_xp"] == 0 and f1["gamification"]["completion_xp"] == 5
+    assert f1["gamification"]["total_xp"] == 5
+
+    # Sesi 2: klien mengirim answers valid + bogus correct=0, total=99 -> server hitung dari answers
+    call(app, "GET", f"/api/child/drills/{aid}/sessions/2/start", token=ct, t="2026-11-16T10:10")
+    qs2 = bank.get_drill_questions(d["topic"], app._drill_seed(1, aid, 2), count=5)
+    ans2 = {str(i): q["ans"] for i, q in enumerate(qs2, 1)}
+    st2, f2 = call(app, "POST", f"/api/child/drills/{aid}/sessions/2/finish", {"answers": ans2, "correct": 0, "total": 99}, token=ct, t="2026-11-16T10:11")
+    assert st2 == 200 and f2["correct"] == 5 and f2["total"] == 5
+    assert f2["gamification"]["base_xp"] == 50 and f2["gamification"]["total_xp"] == 55
+
+
+def test_g20_same_user_agent_four_device_ids_blocked_and_relogin_allowed(app):
+    r = register(app)
+    same_ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0"
+    for i in range(1, 4):
+        st, _ = call(app, "POST", "/api/child/login", {"code": r["child_code"]}, headers={"User-Agent": same_ua, "X-Device-Id": f"dev_browser_{i}"})
+        assert st == 200
+    # Login ulang dari perangkat 2 yang sama tetap diizinkan tanpa menambah slot
+    st_re, _ = call(app, "POST", "/api/child/login", {"code": r["child_code"]}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_browser_2"})
+    assert st_re == 200
+    # Perangkat ke-4 unik ditolak walau User-Agent identik
+    st4, e4 = call(app, "POST", "/api/child/login", {"code": r["child_code"]}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_browser_4"})
+    assert st4 == 403 and e4["error"] == "device_limit_tercapai"

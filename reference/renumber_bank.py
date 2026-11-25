@@ -50,19 +50,32 @@ def normalize_chatgpt_items(raw_items: list[dict]) -> tuple[list[dict], list[dic
             subj = bf.TOPIC_SUBJECT.get(code, subj_raw)
         lvl = int(src.get("level", 1))
         stem = str(src.get("q", "")).strip()
-        pid = None
-        if code.startswith("BAC-"):
-            p_seq += 1
-            pid = f"BAC-P-C{p_seq:03d}"
-            # Pisahkan kalimat wacana dan kalimat tanya bila ada
+        pid = str(src.get("passage_id") or "").strip() or None
+        subtopic_txt = topic_raw[:60] if len(topic_raw) >= 3 else f"Topik {code}"
+        if code.startswith("BAC-") and not pid:
+            # Wacana singkat inline (< 120 kata) tanpa bacaan panjang eksternal -> Logika Verbal (Wacana)
             marker = "Gagasan utama"
-            if marker in stem:
-                para, qpart = stem.split(marker, 1)
-                p_text = para.strip() or stem
-                stem = (marker + qpart).strip()
+            para_part = stem.split(marker, 1)[0].strip() if marker in stem else stem
+            if len(para_part.split()) >= 120:
+                p_seq += 1
+                pid = f"BAC-P-C{p_seq:03d}"
+                if marker in stem:
+                    para, qpart = stem.split(marker, 1)
+                    stem = (marker + qpart).strip()
+                    passages.append({"passage_id": pid, "topic": code, "text": para.strip() or stem})
+                else:
+                    passages.append({"passage_id": pid, "topic": code, "text": stem})
             else:
-                p_text = stem
-            passages.append({"passage_id": pid, "topic": code, "text": p_text})
+                subj = "Verbal"
+                code = "VER-LOG"
+                subtopic_txt = "Gagasan Utama Wacana"
+        opts = list(src.get("opts", []))
+        ans = int(src.get("ans", 0))
+        if len(opts) == 4 and 0 <= ans < 4:
+            target = (idx - 1) % 4
+            if target != ans:
+                opts[ans], opts[target] = opts[target], opts[ans]
+                ans = target
         expl = str(src.get("penjelasan", "")).strip()
         if len(expl) < 20:
             expl = expl + " (pembahasan tervalidasi bank soal)."
@@ -74,13 +87,13 @@ def normalize_chatgpt_items(raw_items: list[dict]) -> tuple[list[dict], list[dic
             "version": int(src.get("version", 1)),
             "subject": subj,
             "topic": code,
-            "subtopic": topic_raw[:60] if len(topic_raw) >= 3 else f"Topik {code}",
+            "subtopic": subtopic_txt,
             "level": lvl if lvl in (1, 2, 3) else 1,
             "type": "pg4",
             "passage_id": pid,
             "stem": stem,
-            "options": list(src.get("opts", [])),
-            "answer_idx": int(src.get("ans", 0)),
+            "options": opts,
+            "answer_idx": ans,
             "explanation": expl,
             "shortcut": sc_txt,
             "shortcut_scope": "umum",

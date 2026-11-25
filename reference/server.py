@@ -119,7 +119,11 @@ def make_handler(app: App, cfg: Config, lock: threading.Lock):
             if n > MAX_BODY:
                 self.close_connection = True
                 if n <= MAX_BODY * 2:
-                    self.rfile.read(n)
+                    try:
+                        self.connection.settimeout(0.05)
+                        self.rfile.read(n)
+                    except Exception:
+                        pass
                 return self._json(413, {"error": "terlalu_besar"})
             body = self.rfile.read(n) if n else b""
             hdrs = dict(self.headers.items())

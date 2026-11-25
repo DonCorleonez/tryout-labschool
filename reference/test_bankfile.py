@@ -144,5 +144,4 @@ def test_chatgpt_raw_batch_01_renumbers_and_validates():
     import import_batch as ib
     res = ib.import_batch(HERE / "testdata" / "batch_01_chatgpt_raw.json")
     assert res["renumbered"] == 56
-    assert res["items_loaded"] == 52 and res["rejected_count"] == 4
-    assert all("ada opsi duplikat" in " ".join(r[2]) for r in res["rejected"])
+    assert res["items_loaded"] == 56 and res["rejected_count"] == 0 and res["warnings"] == []

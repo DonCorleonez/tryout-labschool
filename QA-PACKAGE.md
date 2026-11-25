@@ -20,10 +20,14 @@ Sebelum menulis kode baru, kondisi repo `DonCorleonez/tryout-labschool` (`main` 
 
 ### Tugas Langsung Neon (Backend Inti & Triase)
 - **G-22 FIXED (`reference/backend.py`):** `admin_standin` kini membungkus pemrosesan setiap job dalam `try ... except Exception`, memvalidasi struktur `input_json` (`scores.topic`), menandai job rusak sebagai `state='gagal'` + mencatat `audit_log` + menandai attempt `analysis_state='fallback'`, lalu **melanjutkan** pemrosesan job berikutnya tanpa crash dan tetap menerbitkan laporan fallback aturan. Dibuktikan dengan `test_g22_corrupted_payload_job_does_not_block_next_job`.
-- **G-20 Triaged & Implemented (`reference/backend.py`):** Batas maksimal **3 perangkat unik aktif** per `(family_id, role)` (`MAX_DEVICES_PER_FAMILY = 3`) dilacak via `X-Device-Id` / `User-Agent` di tabel `sessions`. Login dari perangkat ke-4 ditolak `403 device_limit_tercapai` dan dicatat di `audit_log`.
+- **G-20 FIXED (`public/js/api.js`, `reference/backend.py`):**
+  - Frontend (`public/js/api.js`) kini membuat dan menyimpan token perangkat persisten di `localStorage` (`tryout_device_id`, format `dev_...`) serta mengirim header `X-Device-Id` di setiap permintaan API.
+  - Backend (`reference/backend.py` `_register_session`) memberi namespace tegas (`id:<device_id>` atau fallback `ua:<user_agent>` bila klien non-browser tidak mengirim `X-Device-Id`), mengizinkan login ulang dari `device` yang sudah terdaftar tanpa menghabiskan slot baru, dan menolak perangkat unik ke-4 dengan `403 device_limit_tercapai` + catatan `audit_log` meskipun `User-Agent` identik (`test_g20_same_user_agent_four_device_ids_blocked_and_relogin_allowed`, plus verifikasi header `X-Device-Id` di Playwright E2E).
+  - **Batasan jujur klien web:** identifikasi browser berbasis `localStorage` bersifat per-profil-browser (dua browser berbeda di satu komputer terhitung dua slot, dan menghapus `localStorage` menghasilkan ID baru; mencegah spoofing/reset browser sepenuhnya tanpa akun native atau fingerprinting invasif di luar batas standar web tidak dilakukan).
+- **Penilaian Drill Khusus Server FIXED (`reference/backend.py` `drill_finish`):** Fallback lama yang membaca `correct`/`total` dari JSON klien telah dihapus total. Server selalu memuat `bank.get_drill_questions(row["topic"], ...)` dan menghitung `correct`, `total`, `review`, `buku_salah`, dan XP semata-mata dari `answers`; nilai `correct`/`total` kiriman klien diabaikan (`test_drill_finish_ignores_client_score_and_computes_on_server`).
 - **F-06 Triaged & Extended (`reference/backend.py`, `reference/schema.sql`, `public/parent/parent.js`):** Model auth orang tua dikonfirmasi menggunakan Email + PIN 6 angka (PBKDF2 120k iterasi + lockout 5 gagal/15 menit). Ditambahkan alur Lupa PIN (`POST /api/parent/pin/reset-request`, `POST /api/parent/pin/reset`, tabel `pin_resets`, + UI `#/lupa-pin`).
-- **G-19 & G-21 Triaged:** Penamaan kode akses mendukung format `LAB-XXXX-XXXX` (`access_code`) sambil menjaga backward compatibility `XXXX-XXXX` (`child_code`), dan aturan taper week + harga stub `TBD` + Jalur Prestasi stub `TBD` disinkronkan di API dan UI.
-- **Perbaikan Socket HTTP 413 (`reference/server.py`):** Menutup koneksi dan menguras body <= `2 * MAX_BODY` saat menolak payload >256KB di Windows agar klien tidak terkena `WinError 10053`.
+- **G-19 & G-21 Audited:** Pencarian menyeluruh di seluruh history git (`git log --all -S`), seluruh branch, dan berkas dokumen memastikan `QA-GATE-CHECKLIST.md` tidak ada di repo maupun Google Drive handoff dan penomoran item di dokumen existing langsung melompat dari `G-18` ke `G-20`/`G-22`; definisi spesifik `G-19` & `G-21` tidak pernah didefinisikan di repo/commit mana pun. Kemampuan keamanan/privacy berdekatan tetap tercakup penuh (`LAB-XXXX-XXXX` access code backward-compatible, isolation data marketing, rate limit, anti-cheat jawaban/skor, taper week & stub `TBD`).
+- **Perbaikan Socket HTTP 413 & Shutdown E2E (`reference/server.py`, `reference/test_e2e_*.py`):** Timeout singkat (`0.05s`) pada pengurasan body <= `2 * MAX_BODY` saat HTTP 413 mencegah thread server hang bila klien menutup stream lebih awal, dan seluruh fixture E2E kini memanggil `page.close()` serta `s.shutdown(); s.server_close()`.
 
 ### Workstream (a) — Design System Roblox-style, Aset Final PNG, & Landing
 - `public/css/roblox-theme.css`, `public/css/site.css`: Token warna cerah (`#38BDF8`, `#FFC93C`, `#FF6B4A`, `#58CC02`, `#8B5CF6`), tipografi rounded (`Fredoka` + `Nunito` dengan fallback sistem offline-safe), radius 12/20/24/pill, tombol chunky dengan border 2–3px & bayangan tekan, kartu feedback hijau/pink, callout `AWAS JEBAKAN` & `CARA CEPAT`.
@@ -48,24 +52,25 @@ Sebelum menulis kode baru, kondisi repo `DonCorleonez/tryout-labschool` (`main` 
 - `reference/import_batch.py`: Smoke importer yang menjalankan renumbering lalu validasi penuh lewat `bankfile.Bank.load`.
 - `reference/bankfile.py`, `reference/bank.py`: Dukungan loader `*.json` (`batch_*.json`), penolakan otomatis kata `"Labschool"` di soal/bacaan, dan `build_drill` / `get_drill_questions` sesuai topik.
 - `reference/testdata/batch_01.json`: **56 soal non-Math** orisinal Kurikulum Merdeka Fase C (4 bacaan 120–250 kata, 14 Pemahaman Bacaan, 14 Verbal, 16 IPA, 12 IPS; sebaran kunci 25% A/B/C/D) + **46 template Math** deterministik mencakup 13 topik `MAT-*` (lolos 1.000 seed, 0 ditolak, 0 peringatan).
-- `reference/testdata/batch_01_chatgpt_raw.json`: Salinan file asli ChatGPT 56 soal non-Math (`bi-kb-01`..`vb-si-06`); smoke import mengonversi & me-renumber 56/56 ID, dengan 52 lolos dan 4 soal tanda baca (`VER-BKU`) tertolak validator karena `_norm()` di `bankfile.py` mengabaikan tanda baca (catatan perbaikan validator untuk Claude QA Gate).
+- `reference/testdata/batch_01_chatgpt_raw.json`: Salinan file asli ChatGPT 56 soal non-Math (`bi-kb-01`..`vb-si-06`). Setelah perbaikan validator tanda baca (`VER-BKU`) di `reference/bankfile.py` serta normalizer wacana singkat (`VER-LOG`) dan penyeimbang kunci (`25%` A/B/C/D) di `reference/renumber_bank.py`, `python import_batch.py testdata/batch_01_chatgpt_raw.json` lolos bersih **56/56 butir, 0 ditolak, 0 peringatan**.
 
 ---
 
 ## 3. Hasil Test Suite Lengkap
 
-Semua test berikut dijalankan setelah edit kode terakhir:
+Semua test berikut dijalankan setelah perbaikan QA Gate:
 
 | Suite | Perintah | Hasil | Target Minimum |
 |---|---|---|---|
-| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **177/177 lulus** | 171/171 |
-| **Real-HTTP Integration** | `cd reference && python -m pytest test_server.py -q` | **22/22 lulus** (`10.13s`) | 22/22 |
-| **Pen-Test & Anti-Clone** | `cd reference && python -m pytest test_pentest.py -q` | **21/21 lulus** (`2.95s`) | 21/21 |
-| **Playwright E2E & Click-Checks** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **7/7 lulus** (termasuk dalam 176) | 6/6 + human click-checks |
+| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **179/179 lulus** | 171/171 |
+| **Real-HTTP Integration** | `cd reference && python -m pytest test_server.py -q` | **22/22 lulus** | 22/22 |
+| **Pen-Test & Anti-Clone** | `cd reference && python -m pytest test_pentest.py -q` | **21/21 lulus** | 21/21 |
+| **Playwright E2E & Click-Checks** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **7/7 lulus** (termasuk dalam 179) | 6/6 + human click-checks |
 | **Simulasi Musim & Persona** | `cd reference && python sim_check.py` | **3345/3345 checks OK** | 1991/1992 |
 | **Frontend JS Runner** | `node frontend/runner.test.js` | **6/6 lulus** | 6/6 |
 | **JS Syntax Check** | `node --check public/js/*.js public/child/child.js public/parent/parent.js` | **5/5 lulus (0 galat)** | — |
-| **Smoke Import `batch_01.json`** | `cd reference && python import_batch.py testdata/batch_01.json` | **56 non-Math + 46 Math templates lolos (0 ditolak)** | — |
+| **Smoke Import `batch_01.json`** | `cd reference && python import_batch.py testdata/batch_01.json` | **56 non-Math + 46 Math templates lolos (0 ditolak, 0 peringatan)** | — |
+| **Smoke Import `batch_01_chatgpt_raw.json`** | `cd reference && python import_batch.py testdata/batch_01_chatgpt_raw.json` | **56/56 lolos (0 ditolak, 0 peringatan)** | — |
 
 ---
 
@@ -93,10 +98,10 @@ Seluruh item berikut sengaja tetap berbentuk stub sesuai Section 8 dan ditandai 
 ## 6. Open Items & Daftar Pertanyaan untuk Oggie (Maksimal 5)
 
 ### Status Open Items (G-19, G-20, G-21, F-06, G-22)
-- **G-22:** **FIXED** (dibuktikan dengan unit & HTTP test).
-- **G-20 (Limit 3 device):** **FIXED** (batas 3 device aktif per role; belum ada UI manajemen cabut 1 perangkat di portal orang tua — Owner: Neon/Muse).
+- **G-22:** **FIXED** (dibuktikan dengan `test_g22_corrupted_payload_job_does_not_block_next_job`).
+- **G-20 (Limit 3 device):** **FIXED** (frontend mengirim `X-Device-Id` persisten di `localStorage`, backend membatasi 3 perangkat unik per role dengan namespace `id:`/`ua:` dan mengizinkan re-login di perangkat sama; belum ada UI cabut 1 perangkat oleh orang tua).
 - **F-06 (Auth orang tua):** **FIXED** (PIN 6 angka + PBKDF2 + lockout + reset PIN via email token).
-- **G-19 & G-21:** Karena `QA-GATE-CHECKLIST.md` tidak ditemukan di repo/Drive, status persis definisi G-19 & G-21 dicatat sebagai **OPEN** menunggu konfirmasi Oggie/Claude QA.
+- **G-19 & G-21:** Tidak ditemukan definisinya di git history maupun dokumen handoff/repo (`QA-GATE-CHECKLIST.md` tidak ada di sumber mana pun); status definisi tetap **UNSPECIFIED / HANDOFF GAP** untuk dikonfirmasi Terra/Claude QA Gate.
 
 ### Keputusan Oggie (25 Nov 2026) — Terkunci untuk QA Gate
 1. **Baseline (1=B):** Lanjutkan branch `feat/neon-redesign-v1` sebagai baseline resmi menuju QA Gate Claude.
@@ -123,6 +128,15 @@ Seluruh 12 aset PNG individual + 1 set kolase (`asset-set.png`) sudah aktif di `
 - `subject-ipa.svg` → `public/assets/final/subject-ipa.png`
 - `subject-ips.svg` → `public/assets/final/subject-ips.png`
 - Set kolase referensi: `public/assets/final/asset-set.png`
+
+### Bukti Visual Hasil Render Playwright (`docs/qa-screenshots/`)
+Tangkapan layar berikut dihasilkan langsung dari test Playwright E2E di Chromium nyata dan di-commit ke repo agar dapat diaudit secara visual tanpa menjalankan server lokal:
+- Desktop Landing (1366×900): [docs/qa-screenshots/landing-desktop.png](./docs/qa-screenshots/landing-desktop.png)
+- Mobile Landing (375×812, overflow 0px): [docs/qa-screenshots/landing-mobile-375.png](./docs/qa-screenshots/landing-mobile-375.png)
+- Portal Anak Beranda (Hero Buddy + Peta Musim): [docs/qa-screenshots/child-beranda.png](./docs/qa-screenshots/child-beranda.png)
+- Portal Anak Layar Hasil (Bintang + XP + Level): [docs/qa-screenshots/child-hasil.png](./docs/qa-screenshots/child-hasil.png)
+- Portal Anak Buku Salah (Filter mapel + CARA CEPAT): [docs/qa-screenshots/child-buku-salah.png](./docs/qa-screenshots/child-buku-salah.png)
+- Portal Orang Tua Laporan 60-Detik (Tanpa kebocoran gamifikasi): [docs/qa-screenshots/parent-report.png](./docs/qa-screenshots/parent-report.png)
 
 ---
 

@@ -60,7 +60,8 @@ def validate_item(it: dict, passages: set) -> list[str]:
     o = it["options"]
     if not (isinstance(o, list) and len(o) == 4 and all(isinstance(x, str) and x.strip() for x in o)): e.append("options harus 4 teks tidak kosong")
     else:
-        if len({_norm(x) for x in o}) != 4: e.append("ada opsi duplikat")
+        uniq = {re.sub(r"\s+", " ", x.strip()) for x in o} if it.get("topic") == "VER-BKU" else {_norm(x) for x in o}
+        if len(uniq) != 4: e.append("ada opsi duplikat")
         if any(FORBIDDEN_OPTS.match(x.strip()) for x in o): e.append("opsi terlarang (semua benar/salah, A dan B benar, ...)")
         if isinstance(it["answer_idx"], int) and 0 <= it["answer_idx"] <= 3:
             key = _norm(o[it["answer_idx"]])

@@ -131,7 +131,12 @@ class App:
 
     def _register_session(self, fid, role, c):
         """Buat sesi baru dengan batas maksimal MAX_DEVICES_PER_FAMILY perangkat unik (G-20)."""
-        dev = (c["h"].get("x-device-id") or c["h"].get("user-agent") or "").strip()[:160] or "default"
+        raw_id = (c["h"].get("x-device-id") or "").strip()
+        if raw_id:
+            dev = f"id:{raw_id[:64]}"
+        else:
+            ua = (c["h"].get("user-agent") or "").strip()
+            dev = f"ua:{ua[:96]}" if ua else "default"
         devs = [r["device"] for r in self.db.execute("SELECT DISTINCT device FROM sessions WHERE family_id=? AND role=?", (fid, role))]
         if dev not in devs and len(devs) >= MAX_DEVICES_PER_FAMILY:
             self.db.execute("INSERT INTO audit_log(actor,action,detail,at) VALUES(?,?,?,?)",
@@ -506,41 +511,33 @@ class App:
         if not row: raise Err(404, "tidak_ada")
         if row["state"] != "siap": raise Err(409, "selesaikan_sesi_sebelumnya" if row["state"] == "terkunci" else "sudah_selesai")
         j = c["json"]
-        review = None
-        if "answers" in j:
-            qs = bank.get_drill_questions(row["topic"], self._drill_seed(s["family_id"], aid, n), count=5)
-            ans_in = {int(k): v for k, v in (j.get("answers") or {}).items()}
-            correct = 0
-            review = []
-            for idx, q in enumerate(qs, 1):
-                ch = ans_in.get(idx)
-                ok = ch is not None and ch == q["ans"]
-                if ok:
-                    correct += 1
-                else:
-                    self.db.execute(
-                        "INSERT OR IGNORE INTO buku_salah(family_id,source_type,source_ref,window_k,qid,subject,topic,subtopic,stem,options_json,chosen_idx,correct_idx,explanation,shortcut,created_at) "
-                        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                        (s["family_id"], "drill", f"drill_{aid}_{n}", st.window.k, q["id"], q["subject"], q["topic"],
-                         q.get("subtopic", ""), q["q"], json.dumps(q["opts"]), ch, q["ans"],
-                         q.get("explanation", ""), q.get("shortcut", ""), iso(c["now"])),
-                    )
-                review.append({"no": idx, "q": q["q"], "opts": q["opts"], "chosen_idx": ch, "correct_idx": q["ans"],
-                               "is_correct": ok, "topic": q["topic"], "explanation": q.get("explanation", ""), "shortcut": q.get("shortcut", "")})
-            total = len(qs)
-        else:
-            correct = int(j.get("correct") or 0)
-            total = int(j.get("total") or 5)
+        qs = bank.get_drill_questions(row["topic"], self._drill_seed(s["family_id"], aid, n), count=5)
+        ans_in = {int(k): v for k, v in (j.get("answers") or {}).items() if str(k).isdigit()}
+        correct = 0
+        review = []
+        for idx, q in enumerate(qs, 1):
+            ch = ans_in.get(idx)
+            ok = ch is not None and ch == q["ans"]
+            if ok:
+                correct += 1
+            else:
+                self.db.execute(
+                    "INSERT OR IGNORE INTO buku_salah(family_id,source_type,source_ref,window_k,qid,subject,topic,subtopic,stem,options_json,chosen_idx,correct_idx,explanation,shortcut,created_at) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (s["family_id"], "drill", f"drill_{aid}_{n}", st.window.k, q["id"], q["subject"], q["topic"],
+                     q.get("subtopic", ""), q["q"], json.dumps(q["opts"]), ch, q["ans"],
+                     q.get("explanation", ""), q.get("shortcut", ""), iso(c["now"])),
+                )
+            review.append({"no": idx, "q": q["q"], "opts": q["opts"], "chosen_idx": ch, "correct_idx": q["ans"],
+                           "is_correct": ok, "topic": q["topic"], "explanation": q.get("explanation", ""), "shortcut": q.get("shortcut", "")})
+        total = len(qs)
         self.db.execute("INSERT OR REPLACE INTO drill_sessions(assignment_id,session_no,started_at,finished_at,correct,total,detail_json) VALUES(?,?,?,?,?,?,?)",
-                        (aid, n, iso(c["now"]), iso(c["now"]), correct, total, json.dumps({"review": review}) if review is not None else None))
+                        (aid, n, iso(c["now"]), iso(c["now"]), correct, total, json.dumps({"review": review})))
         g_drill = gm.score_drill_xp(correct)
         self.db.execute("INSERT OR IGNORE INTO child_xp_events(family_id,source_type,source_ref,xp,detail_json,created_at) VALUES(?,?,?,?,?,?)",
                         (s["family_id"], "drill", f"drill_{aid}_{n}", g_drill["total_xp"], json.dumps(g_drill), iso(c["now"])))
         g_out = g_drill | {"level": gm.level_info(self._child_xp_total(s["family_id"]))}
-        out = {"ok": True, "correct": correct, "total": total, "gamification": g_out}
-        if review is not None:
-            out["review"] = review
-        return out
+        return {"ok": True, "correct": correct, "total": total, "gamification": g_out, "review": review}
 
     # ---------- pembayaran ----------
     def order_new(self, c):
