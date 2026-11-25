@@ -1,5 +1,7 @@
 # Panduan & Prompt Aset Visual ChatGPT (Tryout Labschool v1)
 
+**Status:** **DONE** — 13 aset PNG final telah di-generate dan diintegrasikan di `public/assets/final/` (aktif dipakai di `public/index.html` dan `public/child/child.js`, dengan `public/assets/placeholders/*.svg` disimpan sebagai arsip vektor ringan).
+
 Dokumen ini memetakan seluruh placeholder vektor di `public/assets/placeholders/*.svg` ke aset final bergaya **blocky/chunky 3D toy** (`public/assets/final/*.png`) yang dihasilkan menggunakan ChatGPT Image Generation (DALL-E / GPT-4o Image).
 
 ---

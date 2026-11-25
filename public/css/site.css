@@ -235,6 +235,7 @@ main > section {
 .hero-visual img {
   width: 96px;
   height: 96px;
+  object-fit: contain;
   flex: none;
 }
 

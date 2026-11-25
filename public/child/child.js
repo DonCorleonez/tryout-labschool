@@ -359,11 +359,14 @@
 
     render(`<div class="card hero-card">
         <div class="row spread">
-          <div>
-            <h1 style="margin:0">Halo!</h1>
-            <p class="muted" style="margin:4px 0 0">Level ${headerState.level} · ${headerState.xp} XP · ★ ${headerState.stars_total}</p>
+          <div class="row" style="gap:12px">
+            <img src="/assets/final/hero-buddy.png" alt="" width="56" height="56" style="object-fit:contain;border-radius:14px">
+            <div>
+              <h1 style="margin:0">Halo!</h1>
+              <p class="muted" style="margin:4px 0 0">Level ${headerState.level} · ${headerState.xp} XP · ★ ${headerState.stars_total}</p>
+            </div>
           </div>
-          <a class="btn sun-btn" href="#/buku-salah">Buku Salah (${Number(h.buku_salah_count || 0)})</a>
+          <a class="btn sun-btn" href="#/buku-salah"><img src="/assets/final/buku-salah-book.png" alt="" width="24" height="24" style="object-fit:contain">Buku Salah (${Number(h.buku_salah_count || 0)})</a>
         </div>
       </div>
       <p class="note">${esc(CLOCK[h.clock] || '')}${h.closes_at ? ` Ditutup ${esc(fmtTime(h.closes_at))}.` : ''}</p>
@@ -574,9 +577,12 @@
 
     const gamificationBlock = g.total_xp != null ? `<div class="card xp-card">
       <div class="row spread">
-        <div>
-          <strong style="font-size:1.15rem">XP Didapat: +${g.total_xp} XP</strong>
-          <div class="muted" style="font-size:.9rem">Streak terbaik: ${g.max_streak || 0} jawaban benar beruntun</div>
+        <div class="row" style="gap:10px">
+          <img src="/assets/final/streak-flame.png" alt="" width="40" height="40" style="object-fit:contain">
+          <div>
+            <strong style="font-size:1.15rem">XP Didapat: +${g.total_xp} XP</strong>
+            <div class="muted" style="font-size:.9rem">Streak terbaik: ${g.max_streak || 0} jawaban benar beruntun</div>
+          </div>
         </div>
         ${renderStars(stars)}
       </div>

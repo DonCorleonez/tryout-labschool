@@ -138,3 +138,11 @@ def test_batch_01_builds_full_format_tryout_and_drills():
     assert len(to) == 40 and all("Labschool" not in json.dumps(q) for q in to)
     dr = b.build_drill("Pecahan", 7, count=5)
     assert len(dr) == 5 and all(q["topic"] == "Pecahan" for q in dr)
+
+
+def test_chatgpt_raw_batch_01_renumbers_and_validates():
+    import import_batch as ib
+    res = ib.import_batch(HERE / "testdata" / "batch_01_chatgpt_raw.json")
+    assert res["renumbered"] == 56
+    assert res["items_loaded"] == 52 and res["rejected_count"] == 4
+    assert all("ada opsi duplikat" in " ".join(r[2]) for r in res["rejected"])

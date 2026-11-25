@@ -15,6 +15,82 @@ import bankfile as bf
 
 ID_RX = re.compile(r"^(?P<topic>[A-Z]{3}-[A-Z]{3})-L(?P<level>[123])-(?P<n>\d{4})$")
 
+TOPIC_MAP = {
+    ("Bahasa Indonesia", "Kata Baku"): ("Verbal", "VER-BKU"),
+    ("Bahasa Indonesia", "Tanda Baca"): ("Verbal", "VER-BKU"),
+    ("Bahasa Indonesia", "Gagasan Utama"): ("Pemahaman Bacaan", "BAC-GAG"),
+    ("Verbal", "Antonim"): ("Verbal", "VER-ANT"),
+    ("Verbal", "Sinonim"): ("Verbal", "VER-SIN"),
+    ("IPA", "Peredaran Darah"): ("IPA", "IPA-PDR"),
+    ("IPA", "Fotosintesis"): ("IPA", "IPA-FOT"),
+    ("IPA", "Rangkaian Listrik"): ("IPA", "IPA-LIS"),
+    ("IPA", "Gaya dan Gerak"): ("IPA", "IPA-GYA"),
+    ("IPA", "Ekosistem"): ("IPA", "IPA-EKO"),
+    ("IPS", "Peta dan Kenampakan"): ("IPS", "IPS-PET"),
+    ("IPS", "Kegiatan Ekonomi"): ("IPS", "IPS-EKN"),
+    ("IPS", "Keragaman Budaya"): ("IPS", "IPS-KEB"),
+}
+
+
+def normalize_chatgpt_items(raw_items: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Konversi format JSON array ChatGPT v1 ({q, opts, ans, penjelasan, cara_cepat}) ke skema kanonik v2."""
+    passages = []
+    out = []
+    p_seq = 0
+    for idx, src in enumerate(raw_items, 1):
+        if "stem" in src and "options" in src and "answer_idx" in src:
+            out.append(dict(src))
+            continue
+        subj_raw = str(src.get("subject", "")).strip()
+        topic_raw = str(src.get("topic", "")).strip()
+        subj, code = TOPIC_MAP.get((subj_raw, topic_raw), (subj_raw, ""))
+        if not code:
+            # Cari berdasarkan nama topik kanonik bila sudah cocok
+            code = next((k for k, v in bf.TOPIC_NAME.items() if v.lower() == topic_raw.lower()), "VER-KOS")
+            subj = bf.TOPIC_SUBJECT.get(code, subj_raw)
+        lvl = int(src.get("level", 1))
+        stem = str(src.get("q", "")).strip()
+        pid = None
+        if code.startswith("BAC-"):
+            p_seq += 1
+            pid = f"BAC-P-C{p_seq:03d}"
+            # Pisahkan kalimat wacana dan kalimat tanya bila ada
+            marker = "Gagasan utama"
+            if marker in stem:
+                para, qpart = stem.split(marker, 1)
+                p_text = para.strip() or stem
+                stem = (marker + qpart).strip()
+            else:
+                p_text = stem
+            passages.append({"passage_id": pid, "topic": code, "text": p_text})
+        expl = str(src.get("penjelasan", "")).strip()
+        if len(expl) < 20:
+            expl = expl + " (pembahasan tervalidasi bank soal)."
+        sc_txt = str(src.get("cara_cepat", "")).strip()
+        if len(sc_txt) < 10:
+            sc_txt = sc_txt + " Gunakan eliminasi opsi."
+        out.append({
+            "id": str(src.get("id", f"{code}-L{lvl}-{idx:04d}")),
+            "version": int(src.get("version", 1)),
+            "subject": subj,
+            "topic": code,
+            "subtopic": topic_raw[:60] if len(topic_raw) >= 3 else f"Topik {code}",
+            "level": lvl if lvl in (1, 2, 3) else 1,
+            "type": "pg4",
+            "passage_id": pid,
+            "stem": stem,
+            "options": list(src.get("opts", [])),
+            "answer_idx": int(src.get("ans", 0)),
+            "explanation": expl,
+            "shortcut": sc_txt,
+            "shortcut_scope": "umum",
+            "est_seconds": {1: 45, 2: 75, 3: 105}.get(lvl, 60),
+            "image": None,
+            "ambiguous": False,
+            "notes": f"orig_id:{src.get('id', '')}",
+        })
+    return out, passages
+
 
 def scan_existing_max(existing_dir: Path | None) -> dict[tuple[str, int], int]:
     """Cari nomor urut maksimum per (topic, level) pada bank existing."""
@@ -80,10 +156,16 @@ def renumber_items(items: list[dict], existing_dir: Path | None = None, start_ov
 
 
 def renumber_batch_file(src: Path, dst: Path | None = None, existing_dir: Path | None = None) -> dict:
-    """Jalankan ID-renumbering pada berkas batch JSON atau JSONL."""
+    """Jalankan ID-renumbering pada berkas batch JSON (dict/array) atau JSONL."""
     dst = dst or src
     if src.suffix == ".json":
         data = json.loads(src.read_text(encoding="utf-8"))
+        if isinstance(data, list):
+            norm_items, passages = normalize_chatgpt_items(data)
+            items, stats = renumber_items(norm_items, existing_dir=existing_dir)
+            payload = {"batch": src.stem, "passages": passages, "items": items}
+            dst.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            return stats
         items, stats = renumber_items(data.get("items", []), existing_dir=existing_dir)
         data["items"] = items
         dst.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

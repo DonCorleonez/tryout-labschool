@@ -25,11 +25,11 @@ Sebelum menulis kode baru, kondisi repo `DonCorleonez/tryout-labschool` (`main` 
 - **G-19 & G-21 Triaged:** Penamaan kode akses mendukung format `LAB-XXXX-XXXX` (`access_code`) sambil menjaga backward compatibility `XXXX-XXXX` (`child_code`), dan aturan taper week + harga stub `TBD` + Jalur Prestasi stub `TBD` disinkronkan di API dan UI.
 - **Perbaikan Socket HTTP 413 (`reference/server.py`):** Menutup koneksi dan menguras body <= `2 * MAX_BODY` saat menolak payload >256KB di Windows agar klien tidak terkena `WinError 10053`.
 
-### Workstream (a) — Design System Roblox-style, Aset Placeholder, & Landing
+### Workstream (a) — Design System Roblox-style, Aset Final PNG, & Landing
 - `public/css/roblox-theme.css`, `public/css/site.css`: Token warna cerah (`#38BDF8`, `#FFC93C`, `#FF6B4A`, `#58CC02`, `#8B5CF6`), tipografi rounded (`Fredoka` + `Nunito` dengan fallback sistem offline-safe), radius 12/20/24/pill, tombol chunky dengan border 2–3px & bayangan tekan, kartu feedback hijau/pink, callout `AWAS JEBAKAN` & `CARA CEPAT`.
-- `public/assets/placeholders/*.svg`: 12 ilustrasi vektor blocky/chunky orisinal.
-- `prompt-chatgpt-visual-assets.md`: Dokumentasi arah seni, pemetaan 12 placeholder SVG -> `public/assets/final/*.png`, serta prompt ChatGPT Image Generation.
-- `public/index.html`, `public/js/landing.js`: Hero + Peta Musim 12 akhir pekan + **Demo 1 soal interaktif** (pecahan `3/4 + 1/2`) + Panel perbandingan side-by-side + Contoh laporan Senin + Modal paywall terpadu + Harga stub `TBD`.
+- `public/assets/final/*.png`: **13 aset PNG final hasil ChatGPT telah terintegrasi** (`hero-buddy.png`, `star-badge.png`, `trophy-level.png`, `streak-flame.png`, `map-flag.png`, `paywall-lock.png`, `buku-salah-book.png`, `subject-kuantitatif.png`, `subject-bacaan.png`, `subject-verbal.png`, `subject-ipa.png`, `subject-ips.png`, `asset-set.png`), dengan `public/assets/placeholders/*.svg` tetap disimpan sebagai arsip vektor ringan.
+- `prompt-chatgpt-visual-assets.md`: Dokumentasi arah seni, pemetaan 12+1 aset PNG final, dan status integrasi **DONE**.
+- `public/index.html`, `public/js/landing.js`: Hero + Peta Musim 12 akhir pekan + **Demo 1 soal interaktif** (pecahan `3/4 + 1/2`) + Panel perbandingan side-by-side + Contoh laporan Senin + Modal paywall terpadu + Harga stub `TBD`, memakai aset `/assets/final/*.png`.
 
 ### Workstream (b) + (d) — Portal Anak, Gamifikasi, Season Map, & Drill Loop
 - `reference/gamification.py`: Implementasi terkunci Section 5 (`+10 XP` per benar tryout/drill, bonus streak per tryout 3=`+5`, 5=`+10`, 8=`+15`, bintang 0–3, level L1–L10 + `+800/level`, `+5 XP` selesai set drill).
@@ -44,10 +44,11 @@ Sebelum menulis kode baru, kondisi repo `DonCorleonez/tryout-labschool` (`main` 
   - Terverifikasi nol kebocoran gamifikasi (`xp`, `stars`, `level`, `streak`) dan nol klaim `"lolos"` di seluruh endpoint & UI orang tua.
 
 ### Workstream (e) — Bank Importer & ID-Renumbering
-- `reference/renumber_bank.py`: Script CLI & modul ID-renumbering deterministik `{TOPIK}-L{level}-{4 digit}` anti-collision terhadap bank existing.
+- `reference/renumber_bank.py`: Script CLI & modul ID-renumbering deterministik `{TOPIK}-L{level}-{4 digit}` anti-collision terhadap bank existing + normalizer otomatis format array ChatGPT v1 (`batch_01_chatgpt_raw.json`).
 - `reference/import_batch.py`: Smoke importer yang menjalankan renumbering lalu validasi penuh lewat `bankfile.Bank.load`.
 - `reference/bankfile.py`, `reference/bank.py`: Dukungan loader `*.json` (`batch_*.json`), penolakan otomatis kata `"Labschool"` di soal/bacaan, dan `build_drill` / `get_drill_questions` sesuai topik.
 - `reference/testdata/batch_01.json`: **56 soal non-Math** orisinal Kurikulum Merdeka Fase C (4 bacaan 120–250 kata, 14 Pemahaman Bacaan, 14 Verbal, 16 IPA, 12 IPS; sebaran kunci 25% A/B/C/D) + **46 template Math** deterministik mencakup 13 topik `MAT-*` (lolos 1.000 seed, 0 ditolak, 0 peringatan).
+- `reference/testdata/batch_01_chatgpt_raw.json`: Salinan file asli ChatGPT 56 soal non-Math (`bi-kb-01`..`vb-si-06`); smoke import mengonversi & me-renumber 56/56 ID, dengan 52 lolos dan 4 soal tanda baca (`VER-BKU`) tertolak validator karena `_norm()` di `bankfile.py` mengabaikan tanda baca (catatan perbaikan validator untuk Claude QA Gate).
 
 ---
 
@@ -57,7 +58,7 @@ Semua test berikut dijalankan setelah edit kode terakhir:
 
 | Suite | Perintah | Hasil | Target Minimum |
 |---|---|---|---|
-| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **176/176 lulus** (`31.70s`) | 171/171 |
+| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **177/177 lulus** | 171/171 |
 | **Real-HTTP Integration** | `cd reference && python -m pytest test_server.py -q` | **22/22 lulus** (`10.13s`) | 22/22 |
 | **Pen-Test & Anti-Clone** | `cd reference && python -m pytest test_pentest.py -q` | **21/21 lulus** (`2.95s`) | 21/21 |
 | **Playwright E2E & Click-Checks** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **7/7 lulus** (termasuk dalam 176) | 6/6 + human click-checks |
@@ -97,37 +98,38 @@ Seluruh item berikut sengaja tetap berbentuk stub sesuai Section 8 dan ditandai 
 - **F-06 (Auth orang tua):** **FIXED** (PIN 6 angka + PBKDF2 + lockout + reset PIN via email token).
 - **G-19 & G-21:** Karena `QA-GATE-CHECKLIST.md` tidak ditemukan di repo/Drive, status persis definisi G-19 & G-21 dicatat sebagai **OPEN** menunggu konfirmasi Oggie/Claude QA.
 
-### Open Questions untuk Oggie (5 Butir)
-1. **Snapshot Fase 1–7 (`tryout-labschool-app`):** Apakah snapshot lokal Fase 1–7 di mesin lain ingin diunggah untuk dibandingkan, atau kita lanjutkan branch `feat/neon-redesign-v1` ini sebagai baseline resmi menuju QA Gate Claude (**Opsi A:** unggah zip Fase 1–7 untuk merge selektif / **Opsi B:** pakai `feat/neon-redesign-v1` saat ini yang sudah lulus 176/176 & 3345/3345)?
-2. **Definisi G-19 & G-21:** Mohon konfirmasi cakupan item **G-19** dan **G-21** dari checklist QA sebelumnya agar bisa diverifikasi atau ditutup sebelum beta (**Opsi A:** kirim daftar 1 kalimat per item / **Opsi B:** serahkan triase ke Claude saat QA Gate).
-3. **Harga Final Paket & Add-on Buku Salah:** Berapa harga final Paket Musim, Mode Kejar (window 7–12), add-on Buku Salah untuk pengguna free-diagnostic, serta persentase diskon Jalur Prestasi (**Opsi A:** tetapkan angka final sekarang / **Opsi B:** tetap `TBD` sampai gerbang pembayaran)?
-4. **Pilihan Payment Gateway & Email Sender:** Gateway mana yang diputuskan untuk live (**Opsi A:** Duitku POP yang adaptornya sudah ada / **Opsi B:** Midtrans atau Xendit), dan apakah Resend disetujui sebagai pengirim email produksi?
-5. **Aset Visual Final ChatGPT:** Apakah 12 aset PNG di `prompt-chatgpt-visual-assets.md` siap di-generate dari prompt yang sudah disiapkan (**Opsi A:** pakai placeholder SVG dulu untuk beta internal / **Opsi B:** generate 12 PNG final dan taruh di `public/assets/final/`)?
+### Keputusan Oggie (25 Nov 2026) — Terkunci untuk QA Gate
+1. **Baseline (1=B):** Lanjutkan branch `feat/neon-redesign-v1` sebagai baseline resmi menuju QA Gate Claude.
+2. **Triase G-19 & G-21 (2=B):** Diserahkan ke Claude pada sesi QA Gate.
+3. **Harga & Diskon Prestasi (3=B):** Pertahankan stub `TBD` sampai akun gateway aktif.
+4. **Gateway & Email Produksi (4=A):** Dikunci ke **Duitku POP + Resend** (adaptor sudah siap di `reference/integrations.py`, tetap tanpa live key di repo).
+5. **Aset Visual Final (5=Done):** 13 file PNG final sudah diintegrasikan di `public/assets/final/` dan aktif terpasang di landing serta portal anak.
 
 ---
 
-## 7. Daftar File Placeholder & Pemetaan ke `prompt-chatgpt-visual-assets.md`
+## 7. Daftar Aset Final PNG (`public/assets/final/`) & Arsip Placeholder
 
-Seluruh 12 SVG orisinal berada di `public/assets/placeholders/` dan dipetakan satu-ke-satu ke `public/assets/final/*.png` di [prompt-chatgpt-visual-assets.md](./prompt-chatgpt-visual-assets.md):
-- `hero-buddy.svg` → `hero-buddy.png`
-- `star-badge.svg` → `star-badge.png`
-- `trophy-level.svg` → `trophy-level.png`
-- `streak-flame.svg` → `streak-flame.png`
-- `map-flag.svg` → `map-flag.png`
-- `paywall-lock.svg` → `paywall-lock.png`
-- `buku-salah-book.svg` → `buku-salah-book.png`
-- `subject-kuantitatif.svg` → `subject-kuantitatif.png`
-- `subject-bacaan.svg` → `subject-bacaan.png`
-- `subject-verbal.svg` → `subject-verbal.png`
-- `subject-ipa.svg` → `subject-ipa.png`
-- `subject-ips.svg` → `subject-ips.png`
+Seluruh 12 aset PNG individual + 1 set kolase (`asset-set.png`) sudah aktif di `public/assets/final/` dan dipetakan di [prompt-chatgpt-visual-assets.md](./prompt-chatgpt-visual-assets.md):
+- `hero-buddy.svg` → `public/assets/final/hero-buddy.png`
+- `star-badge.svg` → `public/assets/final/star-badge.png`
+- `trophy-level.svg` → `public/assets/final/trophy-level.png`
+- `streak-flame.svg` → `public/assets/final/streak-flame.png`
+- `map-flag.svg` → `public/assets/final/map-flag.png`
+- `paywall-lock.svg` → `public/assets/final/paywall-lock.png`
+- `buku-salah-book.svg` → `public/assets/final/buku-salah-book.png`
+- `subject-kuantitatif.svg` → `public/assets/final/subject-kuantitatif.png`
+- `subject-bacaan.svg` → `public/assets/final/subject-bacaan.png`
+- `subject-verbal.svg` → `public/assets/final/subject-verbal.png`
+- `subject-ipa.svg` → `public/assets/final/subject-ipa.png`
+- `subject-ips.svg` → `public/assets/final/subject-ips.png`
+- Set kolase referensi: `public/assets/final/asset-set.png`
 
 ---
 
 ## 8. Instruksi Menjalankan Ulang Seluruh Test (untuk Claude QA Gate)
 
 ```bash
-# 1. Reference tests + Real-HTTP (22) + Pen-test (21) + Playwright E2E (7) = 176 tests
+# 1. Reference tests + Real-HTTP (22) + Pen-test (21) + Playwright E2E (7) = 177 tests
 cd reference
 QUIET_LOG=1 python -m pytest -q
 
