@@ -13,6 +13,7 @@ from pathlib import Path
 
 import analysis as an
 import bank
+import gamification as gm
 import schedule as sc
 import integrations as ig
 
@@ -24,6 +25,7 @@ PIN_LOCK_MIN = 15
 PIN_ITER = 120_000
 FREE_DIAG_ANYTIME = True         # kebijakan diagnostik gratis A (kapan saja) / B (hanya di jendela)
 MAX_LOGIN_FAILS = 5              # per IP per 10 menit
+MAX_DEVICES_PER_FAMILY = 3       # G-20: batas maksimal perangkat unik aktif per role/keluarga
 IDR = {"utama": 499_000, "kejar": None}   # harga = keputusan pemilik (2 Nov 2026: paket utama Rp499.000; mode kejar belum ditetapkan)
 
 iso = lambda d: d.isoformat()
@@ -62,13 +64,22 @@ class App:
         self._now = now or (lambda: datetime.now(sc.WIB))
         self.secret, self.admin_token, self.playtest = webhook_secret.encode(), admin_token, playtest
         self.routes = [(m, re.compile("^" + p + "$"), fn) for m, p, fn in [
-            ("POST", r"/api/parent/register", self.register), ("POST", r"/api/parent/login", self.parent_login), ("POST", r"/api/child/login", self.child_login),
-            ("GET", r"/api/child/home", self.child_home), ("POST", r"/api/child/tryouts/(?P<tid>[A-Z0-9-]+)/start", self.start),
+            ("POST", r"/api/parent/register", self.register), ("POST", r"/api/parent/login", self.parent_login),
+            ("POST", r"/api/parent/pin/reset-request", self.pin_reset_request), ("POST", r"/api/parent/pin/reset", self.pin_reset),
+            ("POST", r"/api/child/login", self.child_login),
+            ("GET", r"/api/child/home", self.child_home), ("GET", r"/api/child/season-map", self.child_season_map),
+            ("GET", r"/api/child/history", self.child_history), ("GET", r"/api/child/buku-salah", self.child_buku_salah),
+            ("POST", r"/api/child/tryouts/(?P<tid>[A-Z0-9-]+)/start", self.start),
             ("POST", r"/api/child/attempts/(?P<ref>att_\w+)/events", self.events), ("POST", r"/api/child/attempts/(?P<ref>att_\w+)/submit", self.submit),
-            ("GET", r"/api/child/drills", self.drills), ("POST", r"/api/child/drills/(?P<aid>\d+)/sessions/(?P<n>\d+)/finish", self.drill_finish),
+            ("GET", r"/api/child/attempts/(?P<ref>att_\w+)/result", self.child_attempt_result),
+            ("GET", r"/api/child/drills", self.drills),
+            ("GET", r"/api/child/drills/(?P<aid>\d+)/sessions/(?P<n>\d+)/start", self.drill_start),
+            ("POST", r"/api/child/drills/(?P<aid>\d+)/sessions/(?P<n>\d+)/finish", self.drill_finish),
             ("POST", r"/api/parent/orders", self.order_new), ("POST", r"/api/webhooks/payment", self.webhook),
             ("POST", r"/api/webhooks/duitku", self.webhook_duitku),
-            ("GET", r"/api/parent/report/latest", self.report_latest), ("GET", r"/api/parent/home", self.parent_home),
+            ("GET", r"/api/parent/report/latest", self.report_latest), ("GET", r"/api/parent/reports", self.parent_reports),
+            ("GET", r"/api/parent/buku-salah", self.parent_buku_salah), ("POST", r"/api/parent/prestasi", self.parent_prestasi),
+            ("GET", r"/api/parent/home", self.parent_home),
             ("POST", r"/api/playtest/orders/(?P<oref>ord_\w+)/pay", self.playtest_pay),
             ("GET", r"/api/admin/queue", self.admin_queue), ("POST", r"/api/admin/analysis/standin", self.admin_standin),
             ("GET", r"/api/admin/export.jsonl", self.admin_export), ("POST", r"/api/admin/families/(?P<fref>fam_\w+)/revoke", self.admin_revoke)]]
@@ -118,6 +129,19 @@ class App:
     def _fam(self, fid):
         return self.db.execute("SELECT * FROM families WHERE id=?", (fid,)).fetchone()
 
+    def _register_session(self, fid, role, c):
+        """Buat sesi baru dengan batas maksimal MAX_DEVICES_PER_FAMILY perangkat unik (G-20)."""
+        dev = (c["h"].get("x-device-id") or c["h"].get("user-agent") or "").strip()[:160] or "default"
+        devs = [r["device"] for r in self.db.execute("SELECT DISTINCT device FROM sessions WHERE family_id=? AND role=?", (fid, role))]
+        if dev not in devs and len(devs) >= MAX_DEVICES_PER_FAMILY:
+            self.db.execute("INSERT INTO audit_log(actor,action,detail,at) VALUES(?,?,?,?)",
+                            ("system", "device_limit_exceeded", f"fid={fid},role={role},dev={dev}"[:200], iso(c["now"])))
+            self.db.commit()
+            raise Err(403, "device_limit_tercapai", f"Maksimal {MAX_DEVICES_PER_FAMILY} perangkat per akun. Gunakan perangkat terdaftar.")
+        tok = secrets.token_urlsafe(24)
+        self.db.execute("INSERT INTO sessions VALUES(?,?,?,?,?,?)", (sha(tok), fid, role, dev, iso(c["now"]), iso(c["now"])))
+        return tok
+
     # ---------- orang tua ----------
     def register(self, c):
         j = c["json"]; errs = {}
@@ -139,12 +163,13 @@ class App:
         self.db.execute("INSERT INTO marketing_leads(family_id,parent_name,whatsapp,email,campus,track,grade,consent_at) VALUES(?,?,?,?,?,?,?,?)",
                         (fid, j["name"], j["whatsapp"], j["email"], j.get("campus"), j.get("track"), j.get("grade"), iso(c["now"])))
         tok = secrets.token_urlsafe(24)
-        self.db.execute("INSERT INTO sessions VALUES(?,?,?,?,?,?)", (sha(tok), fid, "parent", c["h"].get("user-agent", ""), iso(c["now"]), iso(c["now"])))
+        dev = (c["h"].get("x-device-id") or c["h"].get("user-agent") or "").strip()[:160] or "default"
+        self.db.execute("INSERT INTO sessions VALUES(?,?,?,?,?,?)", (sha(tok), fid, "parent", dev, iso(c["now"]), iso(c["now"])))
         self.enqueue_email(fid, "selamat_datang", f"welcome:{ref}", "Akun Tryout Labschool sudah aktif",
                            "Akun Anda sudah aktif.\n\nAnak bisa mengerjakan diagnostik gratis kapan saja di " + self.base_url + "/child/ "
                            "dengan kode siswa yang tampil saat pendaftaran. Demi keamanan, kode itu tidak kami kirim lewat email.\n\n"
                            "Masuk dashboard orang tua: " + self.base_url + "/parent/", c["now"])
-        return {"token": tok, "family_ref": ref, "child_code": code, "join_window": sc.join_window(c["now"])}   # kode asli hanya sekali
+        return {"token": tok, "family_ref": ref, "child_code": code, "access_code": f"LAB-{code}", "join_window": sc.join_window(c["now"])}   # kode asli hanya sekali
 
     def parent_login(self, c):
         """Masuk orang tua: email + PIN 6 angka. Salah >= PIN_MAX_FAILS dalam PIN_LOCK_MIN menit => terkunci (per keluarga)."""
@@ -160,9 +185,31 @@ class App:
             raise Err(401, "email_atau_pin_salah", "Email atau PIN salah.")                 # tidak membocorkan email mana yang terdaftar
         if r["revoked"]: raise Err(403, "akses_dinonaktifkan")
         self.db.execute("DELETE FROM login_attempts WHERE kind=?", (kind,))
-        tok = secrets.token_urlsafe(24)
-        self.db.execute("INSERT INTO sessions VALUES(?,?,?,?,?,?)", (sha(tok), r["id"], "parent", c["h"].get("user-agent", ""), iso(c["now"]), iso(c["now"])))
+        tok = self._register_session(r["id"], "parent", c)
         return {"token": tok, "family_ref": r["public_ref"]}
+
+    def pin_reset_request(self, c):
+        """F-06: minta reset PIN lewat email tanpa membocorkan status email terdaftar."""
+        email = str(c["json"].get("email", "")).strip().lower()
+        r = self.db.execute("SELECT f.id, f.public_ref FROM marketing_leads m JOIN families f ON f.id=m.family_id WHERE lower(m.email)=? ORDER BY f.id DESC LIMIT 1", (email,)).fetchone()
+        if r:
+            tok = secrets.token_urlsafe(24)
+            exp = iso(c["now"] + timedelta(minutes=30))
+            self.db.execute("INSERT INTO pin_resets(token_hash,family_id,expires_at,created_at) VALUES(?,?,?,?)", (sha(tok), r["id"], exp, iso(c["now"])))
+            self.enqueue_email(r["id"], "reset_pin", f"reset:{r['public_ref']}:{tok[:8]}", "Reset PIN Orang Tua",
+                               f"Gunakan token berikut dalam 30 menit untuk mengatur ulang PIN Anda: {tok}", c["now"])
+        return {"ok": True, "message": "Jika email terdaftar, tautan reset PIN telah dikirim."}
+
+    def pin_reset(self, c):
+        j = c["json"]; tok = str(j.get("token", "")).strip(); pin = str(j.get("pin", "")).strip()
+        if not re.match(r"^\d{6}$", pin): raise Err(422, "validasi", json.dumps({"pin": "6 angka"}))
+        row = self.db.execute("SELECT * FROM pin_resets WHERE token_hash=? AND used_at IS NULL", (sha(tok),)).fetchone()
+        if not row or iso(c["now"]) > row["expires_at"]:
+            raise Err(400, "token_tidak_valid", "Token reset tidak berlaku atau sudah kedaluwarsa.")
+        self.db.execute("UPDATE families SET pin_hash=? WHERE id=?", (hash_pin(pin), row["family_id"]))
+        self.db.execute("UPDATE pin_resets SET used_at=? WHERE token_hash=?", (iso(c["now"]), sha(tok)))
+        self.db.execute("DELETE FROM login_attempts WHERE kind=?", (f"parent:{row['family_id']}",))
+        return {"ok": True}
 
     def report_latest(self, c):
         s = self._session(c, "parent")
@@ -180,13 +227,14 @@ class App:
         ip = sha(c["ip"]); since = iso(c["now"] - timedelta(minutes=10))
         fails = self.db.execute("SELECT COUNT(*) n FROM login_attempts WHERE ip_hash=? AND kind='child' AND at>?", (ip, since)).fetchone()["n"]
         if fails >= MAX_LOGIN_FAILS: raise Err(429, "terlalu_sering")
-        f = self.db.execute("SELECT * FROM families WHERE code_hash=?", (sha(str(c["json"].get("code", "")).upper().strip()),)).fetchone()
+        raw_code = str(c["json"].get("code", "")).upper().strip()
+        norm_code = raw_code[4:] if raw_code.startswith("LAB-") else raw_code
+        f = self.db.execute("SELECT * FROM families WHERE code_hash=?", (sha(norm_code),)).fetchone()
         if not f:
             self.db.execute("INSERT INTO login_attempts VALUES(?,?,?)", (ip, "child", iso(c["now"]))); self.db.commit()
             raise Err(401, "kode_tidak_dikenali", "Periksa lagi atau tanya orang tua.")        # tidak membocorkan keberadaan kode
         if f["revoked"]: raise Err(403, "akses_dinonaktifkan")
-        tok = secrets.token_urlsafe(24)
-        self.db.execute("INSERT INTO sessions VALUES(?,?,?,?,?,?)", (sha(tok), f["id"], "child", c["h"].get("user-agent", ""), iso(c["now"]), iso(c["now"])))
+        tok = self._register_session(f["id"], "child", c)
         return {"token": tok}
 
     def _done_ids(self, fid, k):
@@ -206,8 +254,48 @@ class App:
         if not sc.can_open_tryout(ids, self._done_ids(s["family_id"], st.window.k), tid): return "kumpulkan_tryout_pertama_dulu", None
         return "", st.window.k
 
+    def _child_xp_total(self, fid: int) -> int:
+        r = self.db.execute("SELECT COALESCE(SUM(xp), 0) AS total FROM child_xp_events WHERE family_id=?", (fid,)).fetchone()
+        return int(r["total"] if r else 0)
+
+    def _child_gamification_summary(self, fid: int) -> dict:
+        total_xp = self._child_xp_total(fid)
+        info = gm.level_info(total_xp)
+        stars_total = 0
+        best_streak = 0
+        for row in self.db.execute("SELECT score_json FROM attempts WHERE family_id=? AND submitted_at IS NOT NULL", (fid,)):
+            try:
+                g = json.loads(row["score_json"] or "{}").get("gamification") or {}
+                stars_total += int(g.get("stars", 0))
+                best_streak = max(best_streak, int(g.get("max_streak", 0)))
+            except (ValueError, TypeError):
+                pass
+        return {**info, "stars_total": stars_total, "best_streak": best_streak}
+
+    def _child_history_rows(self, fid: int) -> list[dict]:
+        rows = []
+        for r in self.db.execute("SELECT * FROM attempts WHERE family_id=? AND submitted_at IS NOT NULL ORDER BY id DESC", (fid,)):
+            sc_obj = json.loads(r["score_json"] or "{}")
+            sco = sc_obj.get("score", {})
+            g = sc_obj.get("gamification", {})
+            rows.append({
+                "attempt": r["public_ref"], "tryout_id": r["tryout_id"], "window": r["window_k"],
+                "submitted_at": r["submitted_at"], "correct": sco.get("correct", 0), "total": sco.get("total", 0),
+                "pct": sco.get("pct", 0.0), "stars": g.get("stars", gm.stars_for_pct(sco.get("pct", 0.0))),
+                "xp_earned": g.get("total_xp", 0),
+            })
+        return rows
+
     def child_home(self, c):
-        s = self._session(c, "child"); st = sc.clock_state(c["now"]); out = {"clock": st.kind, "window": st.window.k if st.window else None, "tryouts": [], "drills": []}
+        s = self._session(c, "child"); st = sc.clock_state(c["now"])
+        bs_count = self.db.execute("SELECT COUNT(*) n FROM buku_salah WHERE family_id=?", (s["family_id"],)).fetchone()["n"]
+        out = {
+            "clock": st.kind, "window": st.window.k if st.window else None,
+            "tryouts": [], "drills": [], "taper": st.kind == "taper",
+            "buku_salah_count": bs_count,
+            "gamification": self._child_gamification_summary(s["family_id"]),
+            "history": self._child_history_rows(s["family_id"]),
+        }
         if st.kind == "tryout":
             ids = sc.tryout_ids(s["join_window"], st.window.k, "utama" if s["plan"] != "free" else "free")
             out["tryouts"] = [{"id": t, "state": self._tryout_state(s, t, st.window.k, c["now"])} for t in ids]
@@ -216,6 +304,58 @@ class App:
             out["drills"] = self._drill_rows(s["family_id"], st.window.k)
             out["pending"] = bool(self.db.execute("SELECT 1 FROM attempts WHERE family_id=? AND window_k=? AND analysis_state='menunggu'", (s["family_id"], st.window.k)).fetchone())
         return out
+
+    def child_season_map(self, c):
+        s = self._session(c, "child"); st = sc.clock_state(c["now"]); fid = s["family_id"]
+        done = {r["tryout_id"]: json.loads(r["score_json"] or "{}") for r in self.db.execute("SELECT tryout_id, score_json FROM attempts WHERE family_id=? AND submitted_at IS NOT NULL", (fid,))}
+        plan_type = "utama" if s["plan"] != "free" else "free"
+        cur_k = st.window.k if st.window else sc.join_window(c["now"])
+        windows = []
+        for w in sc.WINDOWS:
+            tids = sc.tryout_ids(s["join_window"], w.k, plan_type)
+            items = []
+            for tid in tids:
+                if tid in done:
+                    pct = done[tid].get("score", {}).get("pct", 0.0)
+                    stars = (done[tid].get("gamification") or {}).get("stars", gm.stars_for_pct(pct))
+                    items.append({"id": tid, "state": "selesai", "pct": pct, "stars": stars})
+                else:
+                    items.append({"id": tid, "state": self._tryout_state(s, tid, w.k, c["now"])})
+            windows.append({
+                "window": w.k, "phase": w.phase, "is_taper": w.is_taper, "n_tryouts": w.n_tryouts,
+                "opens_at": iso(w.tryout_open), "closes_at": iso(w.tryout_close),
+                "is_current": w.k == cur_k, "tryouts": items,
+            })
+        return {"join_window": s["join_window"], "plan": s["plan"], "clock": st.kind, "windows": windows}
+
+    def child_history(self, c):
+        s = self._session(c, "child")
+        return {"history": self._child_history_rows(s["family_id"]), "gamification": self._child_gamification_summary(s["family_id"])}
+
+    def child_attempt_result(self, c):
+        s, a = self._attempt(c)
+        if not a["submitted_at"]:
+            raise Err(409, "belum_dikumpulkan")
+        saved = json.loads(a["score_json"])
+        qs = {q["id"]: q for q in bank.get_questions(_seed(s["family_id"], a["tryout_id"]))}
+        order = json.loads(a["question_ids"])
+        saved["questions"] = [{"no": n, "q": qs[qid]["q"], "opts": qs[qid]["opts"]} for n, qid in enumerate(order, 1) if qid in qs]
+        saved["gamification"] = saved.get("gamification", {}) | {"level": gm.level_info(self._child_xp_total(s["family_id"]))}
+        return saved
+
+    def child_buku_salah(self, c):
+        s = self._session(c, "child")
+        rows = [
+            {
+                "id": r["id"], "source_type": r["source_type"], "source_ref": r["source_ref"], "window": r["window_k"],
+                "qid": r["qid"], "subject": r["subject"], "topic": r["topic"], "subtopic": r["subtopic"],
+                "stem": r["stem"], "options": json.loads(r["options_json"]), "chosen_idx": r["chosen_idx"],
+                "correct_idx": r["correct_idx"], "explanation": r["explanation"], "shortcut": r["shortcut"],
+                "created_at": r["created_at"],
+            }
+            for r in self.db.execute("SELECT * FROM buku_salah WHERE family_id=? ORDER BY id DESC", (s["family_id"],))
+        ]
+        return {"items": rows, "total": len(rows)}
 
     def _tryout_state(self, s, tid, k, now):
         if tid in self._done_ids(s["family_id"], k): return "selesai"
@@ -294,9 +434,24 @@ class App:
             self.db.execute("INSERT INTO attempt_answers VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (a["id"], n, x.qid, x.chosen_idx, x.correct_idx, p["raw"], p["idle"], x.seconds, p["visits"], int(x.flagged), p["flag_toggles"], x.changes, int(x.changed_correct_to_wrong), t["tag"]))
         payload = self._payload(s, a, sco, rule, answers, qs)
         review = self._review(answers, qs, order)
-        self.db.execute("UPDATE attempts SET submitted_at=?, score_json=?, rule_json=?, analysis_state='menunggu' WHERE id=?", (iso(now), json.dumps({"score": sco, "review": review}), json.dumps(rule), a["id"]))
+        g_res = gm.score_tryout_xp([x.chosen_idx == x.correct_idx for x in answers], sco["pct"])
+        self.db.execute("INSERT OR IGNORE INTO child_xp_events(family_id,source_type,source_ref,xp,detail_json,created_at) VALUES(?,?,?,?,?,?)",
+                        (s["family_id"], "tryout", a["public_ref"], g_res["total_xp"], json.dumps(g_res), iso(now)))
+        for n, x in enumerate(answers, 1):
+            if x.chosen_idx != x.correct_idx:
+                q = qs[x.qid]
+                self.db.execute(
+                    "INSERT OR IGNORE INTO buku_salah(family_id,source_type,source_ref,window_k,qid,subject,topic,subtopic,stem,options_json,chosen_idx,correct_idx,explanation,shortcut,created_at) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (s["family_id"], "tryout", a["public_ref"], a["window_k"], x.qid, x.subject, x.topic,
+                     q.get("subtopic", ""), q["q"], json.dumps(q["opts"]), x.chosen_idx, x.correct_idx,
+                     q.get("explanation", ""), q.get("shortcut", ""), iso(now)),
+                )
+        g_out = g_res | {"level": gm.level_info(self._child_xp_total(s["family_id"]))}
+        self.db.execute("UPDATE attempts SET submitted_at=?, score_json=?, rule_json=?, analysis_state='menunggu' WHERE id=?",
+                        (iso(now), json.dumps({"score": sco, "review": review, "gamification": g_out}), json.dumps(rule), a["id"]))
         self.db.execute("INSERT INTO analysis_jobs(attempt_id,state,input_json,created_at) VALUES(?,?,?,?)", (a["id"], "menunggu", json.dumps(payload), iso(now)))
-        return {"score": sco, "review": review, "analisa": "menunggu"}     # kunci baru boleh keluar SETELAH submit
+        return {"score": sco, "review": review, "analisa": "menunggu", "gamification": g_out}     # kunci baru boleh keluar SETELAH submit
 
     @staticmethod
     def _review(answers, qs, order):
@@ -320,7 +475,7 @@ class App:
         for r in self.db.execute("SELECT * FROM drill_assignments WHERE family_id=? AND source_window=? ORDER BY id", (fid, k)):
             done = {x["session_no"] for x in self.db.execute("SELECT session_no FROM drill_sessions WHERE assignment_id=? AND finished_at IS NOT NULL", (r["id"],))}
             for n in range(1, r["sessions"] + 1):
-                rows.append({"assignment": r["id"], "topic": r["topic"], "session": n, "done": n in done})
+                rows.append({"assignment": r["id"], "topic": r["topic"], "focus": r["focus"], "session": n, "done": n in done})
         first = False
         for x in rows:
             x["state"] = "selesai" if x["done"] else ("siap" if not first else "terkunci"); first = first or not x["done"]
@@ -329,7 +484,20 @@ class App:
     def drills(self, c):
         s = self._session(c, "child"); st = sc.clock_state(c["now"])
         if st.kind not in ("drill", "taper"): raise Err(409, "jendela_tertutup")
-        return {"drills": self._drill_rows(s["family_id"], st.window.k)}
+        return {"drills": self._drill_rows(s["family_id"], st.window.k), "taper": st.kind == "taper"}
+
+    def _drill_seed(self, fid: int, aid: int, n: int) -> int:
+        return zlib.crc32(f"drill:{fid}:{aid}:{n}".encode()) & 0xFFFF
+
+    def drill_start(self, c):
+        s = self._session(c, "child"); st = sc.clock_state(c["now"]); aid, n = int(c["args"]["aid"]), int(c["args"]["n"])
+        if st.kind not in ("drill", "taper"): raise Err(409, "jendela_tertutup")
+        row = next((x for x in self._drill_rows(s["family_id"], st.window.k) if x["assignment"] == aid and x["session"] == n), None)
+        if not row: raise Err(404, "tidak_ada")
+        if row["state"] != "siap": raise Err(409, "selesaikan_sesi_sebelumnya" if row["state"] == "terkunci" else "sudah_selesai")
+        qs = bank.get_drill_questions(row["topic"], self._drill_seed(s["family_id"], aid, n), count=5)
+        self.db.execute("INSERT OR IGNORE INTO drill_sessions(assignment_id,session_no,started_at) VALUES(?,?,?)", (aid, n, iso(c["now"])))
+        return {"assignment": aid, "session": n, "topic": row["topic"], "focus": row.get("focus", ""), "questions": [bank.public(q) for q in qs]}
 
     def drill_finish(self, c):
         s = self._session(c, "child"); st = sc.clock_state(c["now"]); aid, n = int(c["args"]["aid"]), int(c["args"]["n"])
@@ -337,8 +505,42 @@ class App:
         row = next((x for x in self._drill_rows(s["family_id"], st.window.k) if x["assignment"] == aid and x["session"] == n), None)
         if not row: raise Err(404, "tidak_ada")
         if row["state"] != "siap": raise Err(409, "selesaikan_sesi_sebelumnya" if row["state"] == "terkunci" else "sudah_selesai")
-        j = c["json"]; self.db.execute("INSERT OR REPLACE INTO drill_sessions(assignment_id,session_no,started_at,finished_at,correct,total) VALUES(?,?,?,?,?,?)", (aid, n, iso(c["now"]), iso(c["now"]), j.get("correct"), j.get("total")))
-        return {"ok": True}
+        j = c["json"]
+        review = None
+        if "answers" in j:
+            qs = bank.get_drill_questions(row["topic"], self._drill_seed(s["family_id"], aid, n), count=5)
+            ans_in = {int(k): v for k, v in (j.get("answers") or {}).items()}
+            correct = 0
+            review = []
+            for idx, q in enumerate(qs, 1):
+                ch = ans_in.get(idx)
+                ok = ch is not None and ch == q["ans"]
+                if ok:
+                    correct += 1
+                else:
+                    self.db.execute(
+                        "INSERT OR IGNORE INTO buku_salah(family_id,source_type,source_ref,window_k,qid,subject,topic,subtopic,stem,options_json,chosen_idx,correct_idx,explanation,shortcut,created_at) "
+                        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        (s["family_id"], "drill", f"drill_{aid}_{n}", st.window.k, q["id"], q["subject"], q["topic"],
+                         q.get("subtopic", ""), q["q"], json.dumps(q["opts"]), ch, q["ans"],
+                         q.get("explanation", ""), q.get("shortcut", ""), iso(c["now"])),
+                    )
+                review.append({"no": idx, "q": q["q"], "opts": q["opts"], "chosen_idx": ch, "correct_idx": q["ans"],
+                               "is_correct": ok, "topic": q["topic"], "explanation": q.get("explanation", ""), "shortcut": q.get("shortcut", "")})
+            total = len(qs)
+        else:
+            correct = int(j.get("correct") or 0)
+            total = int(j.get("total") or 5)
+        self.db.execute("INSERT OR REPLACE INTO drill_sessions(assignment_id,session_no,started_at,finished_at,correct,total,detail_json) VALUES(?,?,?,?,?,?,?)",
+                        (aid, n, iso(c["now"]), iso(c["now"]), correct, total, json.dumps({"review": review}) if review is not None else None))
+        g_drill = gm.score_drill_xp(correct)
+        self.db.execute("INSERT OR IGNORE INTO child_xp_events(family_id,source_type,source_ref,xp,detail_json,created_at) VALUES(?,?,?,?,?,?)",
+                        (s["family_id"], "drill", f"drill_{aid}_{n}", g_drill["total_xp"], json.dumps(g_drill), iso(c["now"])))
+        g_out = g_drill | {"level": gm.level_info(self._child_xp_total(s["family_id"]))}
+        out = {"ok": True, "correct": correct, "total": total, "gamification": g_out}
+        if review is not None:
+            out["review"] = review
+        return out
 
     # ---------- pembayaran ----------
     def order_new(self, c):
@@ -437,6 +639,122 @@ class App:
                 "offer": {"plan": offer, "amount_idr": IDR.get(offer), "tryouts": sc.total_for_family(sc.join_window(c["now"]), "utama")},
                 "playtest": self.playtest, "gateway": self.gateway.name}
 
+    def parent_reports(self, c):
+        """Laporan FULL HISTORY untuk orang tua (TANPA gamifikasi anak XP/bintang/level dan tanpa klaim lulus)."""
+        s = self._session(c, "parent"); fid = s["family_id"]
+        att_rows = self.db.execute("SELECT * FROM attempts WHERE family_id=? AND submitted_at IS NOT NULL ORDER BY id", (fid,)).fetchall()
+        trends, topic_acc, pcts = [], {}, []
+        for r in att_rows:
+            sc_obj = json.loads(r["score_json"] or "{}")
+            sco = sc_obj.get("score", {})
+            rule = json.loads(r["rule_json"] or "{}")
+            pct = sco.get("pct", 0.0); pcts.append(pct)
+            trends.append({
+                "tryout_id": r["tryout_id"], "window": r["window_k"],
+                "phase": sc.WINDOWS[r["window_k"] - 1].phase if 1 <= r["window_k"] <= len(sc.WINDOWS) else "",
+                "submitted_at": r["submitted_at"], "correct": sco.get("correct", 0), "total": sco.get("total", 0), "pct": pct,
+                "subjects": sco.get("subject", {}), "avg_sec": rule.get("avg_sec"),
+                "matrix": rule.get("matrix"), "stamina_drop": bool(rule.get("stamina_drop")), "blank_tail": bool(rule.get("blank_tail")),
+            })
+            for tname, tv in (sco.get("topic") or {}).items():
+                b = topic_acc.setdefault(tname, {"c": 0, "t": 0})
+                b["c"] += tv.get("c", 0); b["t"] += tv.get("t", 0)
+        topic_trends = [
+            {"topic": k, "c": v["c"], "t": v["t"], "pct": round(100 * v["c"] / v["t"], 1) if v["t"] else 0.0}
+            for k, v in sorted(topic_acc.items(), key=lambda kv: (kv[1]["c"] / max(1, kv[1]["t"]), kv[0]))
+        ]
+        # Drill effort history (usaha/konsistensi, bukan skor/gamifikasi)
+        drill_history = []
+        done_drills = 0; total_drills = 0
+        for da in self.db.execute("SELECT * FROM drill_assignments WHERE family_id=? ORDER BY source_window, id", (fid,)):
+            total_drills += da["sessions"]
+            sess = self.db.execute("SELECT session_no, finished_at, correct, total FROM drill_sessions WHERE assignment_id=? ORDER BY session_no", (da["id"],)).fetchall()
+            done_n = sum(1 for x in sess if x["finished_at"])
+            done_drills += done_n
+            drill_history.append({
+                "window": da["source_window"], "topic": da["topic"], "focus": da["focus"],
+                "sessions_total": da["sessions"], "sessions_done": done_n,
+            })
+        # Jendela terlewat (netral tanpa menyalahkan)
+        done_by_w = {r["window_k"] for r in att_rows}
+        cur_k = sc.current_window_index(c["now"])
+        plan_type = "utama" if s["plan"] != "free" else "free"
+        missed_windows = [
+            {"window": w.k, "phase": w.phase}
+            for w in sc.WINDOWS
+            if w.k <= cur_k and w.k >= (s["join_window"] or 1) and sc.tryout_ids(s["join_window"], w.k, plan_type) and w.k not in done_by_w and c["now"] > w.tryout_close
+        ]
+        weak = an.weak_topics(topic_acc)
+        status = an.readiness_status(pcts, bool(weak))
+        wrong_items = [
+            {
+                "id": r["id"], "source_type": r["source_type"], "window": r["window_k"], "qid": r["qid"],
+                "subject": r["subject"], "topic": r["topic"], "subtopic": r["subtopic"], "stem": r["stem"],
+                "options": json.loads(r["options_json"]), "chosen_idx": r["chosen_idx"], "correct_idx": r["correct_idx"],
+                "explanation": r["explanation"], "shortcut": r["shortcut"],
+            }
+            for r in self.db.execute("SELECT * FROM buku_salah WHERE family_id=? ORDER BY id DESC LIMIT 100", (fid,))
+        ]
+        recs = []
+        if weak:
+            recs.append(f"Fokuskan latihan minggu ini pada topik {weak[0]['topic']} ({weak[0]['pct']}%).")
+        if trends and trends[-1].get("matrix"):
+            recs.append(trends[-1]["matrix"]["advice"])
+        if len(recs) < 3:
+            recs.append("Gunakan Buku Salah sebagai bahan review singkat sebelum tryout akhir pekan berikutnya.")
+        latest_pub = self.db.execute("SELECT * FROM reports WHERE family_id=? AND status='terbit' ORDER BY window_k DESC LIMIT 1", (fid,)).fetchone()
+        return {
+            "summary": {
+                "status": status,
+                "disclaimer": "Alat ukur latihan mandiri, bukan prediksi penerimaan dan tidak berafiliasi dengan instansi sekolah mana pun.",
+                "tryouts_completed": len(att_rows),
+                "tryouts_total": sc.total_for_family(s["join_window"] or 1, plan_type),
+                "drills_completed": done_drills,
+                "drills_assigned": total_drills,
+                "missed_windows": missed_windows,
+                "latest_headline": latest_pub["headline"] if latest_pub else f"Status kesiapan latihan: {status}",
+            },
+            "trends": trends,
+            "topic_trends": topic_trends,
+            "drill_history": drill_history,
+            "wrong_items": wrong_items,
+            "recommendations": recs[:3],
+            "buku_salah_count": len(wrong_items),
+        }
+
+    def parent_buku_salah(self, c):
+        s = self._session(c, "parent"); fid = s["family_id"]
+        rows = [
+            {
+                "id": r["id"], "source_type": r["source_type"], "source_ref": r["source_ref"], "window": r["window_k"],
+                "qid": r["qid"], "subject": r["subject"], "topic": r["topic"], "subtopic": r["subtopic"],
+                "stem": r["stem"], "options": json.loads(r["options_json"]), "chosen_idx": r["chosen_idx"],
+                "correct_idx": r["correct_idx"], "explanation": r["explanation"], "shortcut": r["shortcut"],
+                "created_at": r["created_at"],
+            }
+            for r in self.db.execute("SELECT * FROM buku_salah WHERE family_id=? ORDER BY id DESC", (fid,))
+        ]
+        return {"plan": s["plan"], "addon_available": s["plan"] == "free", "items": rows, "total": len(rows)}
+
+    def parent_prestasi(self, c):
+        """Stub Jalur Prestasi: diskon (bukan cash), persen masih TBD sesuai keputusan produk."""
+        s = self._session(c, "parent"); fid = s["family_id"]
+        proof = str(c["json"].get("proof_ref", "")).strip()
+        if len(proof) < 4:
+            raise Err(422, "validasi", json.dumps({"proof_ref": "wajib diisi nomor/referensi bukti"}))
+        ph = sha(proof.upper())
+        existing = self.db.execute("SELECT * FROM prestasi_claims WHERE family_id=?", (fid,)).fetchone()
+        if existing:
+            return {"discount_code": existing["discount_code"], "discount_percent": "TBD", "type": "diskon_stub"}
+        if self.db.execute("SELECT 1 FROM prestasi_claims WHERE proof_hash=?", (ph,)).fetchone():
+            raise Err(409, "bukti_sudah_dipakai", "Referensi bukti ini sudah pernah digunakan.")
+        dcode = "PRESTASI-" + secrets.token_hex(3).upper()
+        self.db.execute("INSERT INTO prestasi_claims(family_id,proof_hash,note,discount_code,created_at) VALUES(?,?,?,?,?)",
+                        (fid, ph, str(c["json"].get("note", ""))[:200], dcode, iso(c["now"])))
+        self.db.execute("INSERT INTO discount_codes(code,family_id,proof_hash,percent,created_at) VALUES(?,?,?,?,?)",
+                        (dcode, fid, ph, None, iso(c["now"])))
+        return {"discount_code": dcode, "discount_percent": "TBD", "type": "diskon_stub"}
+
     def webhook(self, c):
         sig = c["h"].get("x-signature", ""); ok = hmac.compare_digest(sig, hmac.new(self.secret, c["raw"], hashlib.sha256).hexdigest())
         j = c["json"]; eid = str(j.get("event_id", ""))
@@ -467,20 +785,62 @@ class App:
 
     def admin_standin(self, c):
         """Pengganti AI: aturan. Panggilan AI sungguhan menggantikan fungsi ini dan menulis output_json yang sama bentuknya."""
-        self._admin(c); jobs = self.db.execute("SELECT j.id, j.input_json, a.id aid, a.family_id, a.window_k FROM analysis_jobs j JOIN attempts a ON a.id=j.attempt_id WHERE j.state='menunggu'").fetchall(); fams = set()
+        self._admin(c)
+        jobs = self.db.execute(
+            "SELECT j.id, j.input_json, a.id aid, a.family_id, a.window_k "
+            "FROM analysis_jobs j JOIN attempts a ON a.id=j.attempt_id WHERE j.state='menunggu'"
+        ).fetchall()
+        fams = set(); processed = 0; failed = 0
         for j in jobs:
-            p = json.loads(j["input_json"]); weak = an.weak_topics(p["scores"]["topic"])
-            out = {"weak_topics": weak, "drill_spec": [{"topic": w["topic"], "focus": "konsep" if w["severity"] == "berat" else "ketelitian"} for w in weak[:2]]}
-            self.db.execute("UPDATE analysis_jobs SET state='selesai', output_json=?, provider='standin', finished_at=? WHERE id=?", (json.dumps(out), iso(c["now"]), j["id"]))
-            self.db.execute("UPDATE attempts SET analysis_state='selesai' WHERE id=?", (j["aid"],)); fams.add((j["family_id"], j["window_k"]))
+            try:
+                p = json.loads(j["input_json"])
+                if not isinstance(p, dict) or not isinstance(p.get("scores"), dict) or not isinstance(p["scores"].get("topic"), dict):
+                    raise ValueError("struktur payload analisa tidak valid")
+                weak = an.weak_topics(p["scores"]["topic"])
+                out = {"weak_topics": weak, "drill_spec": [{"topic": w["topic"], "focus": "konsep" if w["severity"] == "berat" else "ketelitian"} for w in weak[:2]]}
+                self.db.execute("UPDATE analysis_jobs SET state='selesai', output_json=?, provider='standin', finished_at=? WHERE id=?", (json.dumps(out), iso(c["now"]), j["id"]))
+                self.db.execute("UPDATE attempts SET analysis_state='selesai' WHERE id=?", (j["aid"],))
+                fams.add((j["family_id"], j["window_k"]))
+                processed += 1
+            except Exception as ex:                      # noqa: BLE001  G-22: job rusak tidak boleh memblokir job berikutnya
+                self.db.execute("UPDATE analysis_jobs SET state='gagal', error=?, provider='standin', finished_at=? WHERE id=?",
+                                (f"corrupted_payload: {type(ex).__name__}: {ex}"[:200], iso(c["now"]), j["id"]))
+                self.db.execute("UPDATE attempts SET analysis_state='fallback' WHERE id=?", (j["aid"],))
+                self.db.execute("INSERT INTO audit_log(actor,action,detail,at) VALUES(?,?,?,?)",
+                                ("system", "analysis_corrupted", f"job={j['id']}:{type(ex).__name__}"[:200], iso(c["now"])))
+                fams.add((j["family_id"], j["window_k"]))
+                failed += 1
         for fid, k in fams:                                                 # gabungkan per jendela: PROGRAM, bukan AI
-            specs = [json.loads(r["output_json"])["weak_topics"] for r in self.db.execute("SELECT output_json FROM analysis_jobs j JOIN attempts a ON a.id=j.attempt_id WHERE a.family_id=? AND a.window_k=? AND j.state='selesai'", (fid, k))]
+            specs = []
+            for r in self.db.execute("SELECT output_json FROM analysis_jobs j JOIN attempts a ON a.id=j.attempt_id WHERE a.family_id=? AND a.window_k=? AND j.state='selesai'", (fid, k)):
+                try:
+                    parsed = json.loads(r["output_json"] or "{}")
+                    if isinstance(parsed, dict) and isinstance(parsed.get("weak_topics"), list):
+                        specs.append(parsed["weak_topics"])
+                except ValueError:
+                    continue
+            used_fallback = False
+            if not specs:
+                used_fallback = True
+                for ar in self.db.execute("SELECT score_json FROM attempts WHERE family_id=? AND window_k=? AND submitted_at IS NOT NULL", (fid, k)):
+                    try:
+                        tmap = (json.loads(ar["score_json"] or "{}").get("score") or {}).get("topic") or {}
+                        if isinstance(tmap, dict):
+                            specs.append(an.weak_topics(tmap))
+                    except ValueError:
+                        continue
             merged = an.merge_drill_specs(specs)
             if not merged:                                                  # F-01: tidak ada topik lemah => 1 sesi pemeliharaan (keputusan 4)
                 self.db.execute("INSERT OR IGNORE INTO drill_assignments(family_id,source_window,topic,focus,sessions,created_at) VALUES(?,?,?,?,?,?)", (fid, k, an.MAINT_TOPIC, "maintenance", 1, iso(c["now"])))
             for m in merged:
                 self.db.execute("INSERT OR IGNORE INTO drill_assignments(family_id,source_window,topic,focus,sessions,created_at) VALUES(?,?,?,?,?,?)", (fid, k, m["topic"], "konsep" if m["severity"] == "berat" else "ketelitian", 2, iso(c["now"])))
-            pcts = [json.loads(r["score_json"])["score"]["pct"] for r in self.db.execute("SELECT score_json FROM attempts WHERE family_id=? AND submitted_at IS NOT NULL ORDER BY id", (fid,))]
+            pcts = []
+            for r in self.db.execute("SELECT score_json FROM attempts WHERE family_id=? AND submitted_at IS NOT NULL ORDER BY id", (fid,)):
+                try:
+                    pcts.append(json.loads(r["score_json"])["score"]["pct"])
+                except (ValueError, KeyError, TypeError):
+                    continue
             status = an.readiness_status(pcts, bool(specs and any(specs)))
-            self.db.execute("INSERT OR REPLACE INTO reports(family_id,window_k,status,headline,body_json,mode,published_at) VALUES(?,?,?,?,?,?,?)", (fid, k, "terbit", f"Status: {status}", json.dumps({"status": status, "pcts": pcts}), "standin", iso(c["now"])))
-        return {"diproses": len(jobs)}
+            self.db.execute("INSERT OR REPLACE INTO reports(family_id,window_k,status,headline,body_json,mode,published_at) VALUES(?,?,?,?,?,?,?)",
+                            (fid, k, "terbit", f"Status: {status}", json.dumps({"status": status, "pcts": pcts}), "fallback" if used_fallback else "standin", iso(c["now"])))
+        return {"diproses": processed, "gagal": failed}
