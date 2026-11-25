@@ -62,10 +62,10 @@ Semua test berikut dijalankan setelah perbaikan QA Gate:
 
 | Suite | Perintah | Hasil | Target Minimum |
 |---|---|---|---|
-| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **183/183 lulus** | 171/171 |
+| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **184/184 lulus** | 171/171 |
 | **Real-HTTP Integration** | `cd reference && python -m pytest test_server.py -q` | **22/22 lulus** | 22/22 |
 | **Pen-Test & Anti-Clone** | `cd reference && python -m pytest test_pentest.py -q` | **21/21 lulus** | 21/21 |
-| **Playwright E2E & Click-Checks** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **7/7 lulus** (termasuk dalam 183) | 6/6 + human click-checks |
+| **Playwright E2E & Click-Checks** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **8/8 lulus** (termasuk dalam 184; mencakup bank kanonik 5 mapel & mobile 375px semua portal) | 6/6 + human click-checks |
 | **Simulasi Musim & Persona** | `cd reference && python sim_check.py` | **3345/3345 checks OK** | 1991/1992 |
 | **Frontend JS Runner** | `node frontend/runner.test.js` | **6/6 lulus** | 6/6 |
 | **JS Syntax Check** | `node --check public/js/*.js public/child/child.js public/parent/parent.js` | **5/5 lulus (0 galat)** | — |
@@ -132,10 +132,12 @@ Seluruh 12 aset PNG individual + 1 set kolase (`asset-set.png`) sudah aktif di `
 Tangkapan layar berikut dihasilkan langsung dari test Playwright E2E di Chromium nyata dan di-commit ke repo agar dapat diaudit secara visual tanpa menjalankan server lokal:
 - Desktop Landing (1366×900): [docs/qa-screenshots/landing-desktop.png](./docs/qa-screenshots/landing-desktop.png)
 - Mobile Landing (375×812, overflow 0px): [docs/qa-screenshots/landing-mobile-375.png](./docs/qa-screenshots/landing-mobile-375.png)
-- Portal Anak Beranda (Hero Buddy + Peta Musim): [docs/qa-screenshots/child-beranda.png](./docs/qa-screenshots/child-beranda.png)
-- Portal Anak Layar Hasil (Bintang + XP + Level): [docs/qa-screenshots/child-hasil.png](./docs/qa-screenshots/child-hasil.png)
-- Portal Anak Buku Salah (Filter mapel + CARA CEPAT): [docs/qa-screenshots/child-buku-salah.png](./docs/qa-screenshots/child-buku-salah.png)
-- Portal Orang Tua Laporan 60-Detik (Tanpa kebocoran gamifikasi): [docs/qa-screenshots/parent-report.png](./docs/qa-screenshots/parent-report.png)
+- Portal Anak Beranda Desktop (Hero Buddy + Peta Musim): [docs/qa-screenshots/child-beranda.png](./docs/qa-screenshots/child-beranda.png)
+- Portal Anak Mobile (375×812, overflow 0px): [docs/qa-screenshots/child-mobile-375.png](./docs/qa-screenshots/child-mobile-375.png)
+- Portal Anak Layar Hasil (Bank kanonik 5 mapel: Kuantitatif, Bacaan, Verbal, IPA, IPS): [docs/qa-screenshots/child-hasil.png](./docs/qa-screenshots/child-hasil.png)
+- Portal Anak Buku Salah (Bank kanonik 5 mapel + CARA CEPAT): [docs/qa-screenshots/child-buku-salah.png](./docs/qa-screenshots/child-buku-salah.png)
+- Portal Orang Tua Laporan 60-Detik Desktop (Bank kanonik 5 mapel, tanpa kebocoran gamifikasi): [docs/qa-screenshots/parent-report.png](./docs/qa-screenshots/parent-report.png)
+- Portal Orang Tua Mobile (375×812, overflow 0px): [docs/qa-screenshots/parent-mobile-375.png](./docs/qa-screenshots/parent-mobile-375.png)
 
 ---
 

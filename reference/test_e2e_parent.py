@@ -12,8 +12,8 @@ SHOTS = Path(os.environ.get("SHOT_DIR", "/tmp/shots"))
 QA_SHOTS = ROOT / "docs" / "qa-screenshots"
 
 
-def _serve(playtest):
-    s, _ = sv.build(sv.Config(host="127.0.0.1", port=0, db_path=":memory:", playtest=playtest, public_dir=str(ROOT / "public")))
+def _serve(playtest, bank_dir=""):
+    s, _ = sv.build(sv.Config(host="127.0.0.1", port=0, db_path=":memory:", playtest=playtest, public_dir=str(ROOT / "public"), bank_dir=bank_dir))
     threading.Thread(target=s.serve_forever, daemon=True).start()
     return s, f"http://127.0.0.1:{s.server_address[1]}"
 
@@ -37,7 +37,9 @@ def test_landing_renders_and_links_to_register(browser):
     page = browser.new_page(viewport={"width": 1366, "height": 900}); errs = _watch(page)
     try:
         page.goto(base + "/")
-        assert "TBD" in page.inner_text("#harga") and "keluarga" not in page.inner_text("body").lower()
+        harga_txt = page.inner_text("#harga")
+        assert "TBD" in harga_txt and "9 Des 2026" in harga_txt and "jendela tersisa" in harga_txt
+        assert "keluarga" not in page.inner_text("body").lower()
         assert page.locator(".weeks li").count() == 13 and page.locator(".weeks li.now").count() <= 1
         page.screenshot(path=str(QA_SHOTS / "landing-desktop.png"), full_page=True)
         # Cek demo interaktif 1 soal (salah -> AWAS JEBAKAN + CARA CEPAT; benar -> kartu hijau)
@@ -188,3 +190,76 @@ def test_full_end_to_end_daftar_tryout_report_drill_buku_salah_and_mobile(browse
         for p in (mpage, cpage, page):
             if p: p.close()
         s.shutdown(); s.server_close()
+
+
+def test_canonical_bank_subjects_and_mobile_portals_in_browser(tmp_path, browser):
+    """Verifikasi bank kanonik (5 mapel resmi batch_01.json) + interaksi mobile 375px portal anak & orang tua."""
+    import json, re, shutil, urllib.request
+    import bank
+    bdir = tmp_path / "canonical_bank"; bdir.mkdir()
+    shutil.copy2(ROOT / "reference" / "testdata" / "batch_01.json", bdir / "batch_01.json")
+    QA_SHOTS.mkdir(parents=True, exist_ok=True)
+    s, base = _serve(True, bank_dir=str(bdir))
+    page = browser.new_page(viewport={"width": 1280, "height": 900}); errs = _watch(page)
+    cpage = browser.new_page(viewport={"width": 375, "height": 812}); cerrs = _watch(cpage)
+    pmpage = browser.new_page(viewport={"width": 375, "height": 812}); perrs = _watch(pmpage)
+    try:
+        # 1. Daftar & bayar Paket Utama
+        page.goto(base + "/parent/?sim=2026-11-04T10:00#/daftar")
+        page.fill("#name", "Ibu Kanonik"); page.fill("#whatsapp", "081288880001")
+        page.fill("#email", "kanonik@contoh.id"); page.fill("#pin", "246810")
+        page.check("#consent"); page.click("button[type=submit]")
+        page.wait_for_selector(".code"); code = page.inner_text(".code")
+        page.click("text=Saya sudah mencatat kode"); page.wait_for_selector("h1:has-text('Dashboard')")
+        page.click("#order"); page.wait_for_selector("#pay"); page.click("#pay")
+        page.wait_for_selector("text=Paket utama aktif")
+
+        # 2. Anak login & kerjakan DIAG 40 soal bank kanonik di HP 375px -> cek 0 overflow & 5 mapel resmi
+        cpage.goto(base + "/child/?sim=2026-11-06T18:00")
+        cpage.fill("#code", "LAB-" + code); cpage.click("button[type=submit]")
+        cpage.wait_for_selector("text=Diagnostik")
+        overflow_child_home = cpage.evaluate("document.documentElement.scrollWidth - window.innerWidth")
+        assert overflow_child_home <= 2, f"Child mobile home overflow: {overflow_child_home}"
+        cpage.screenshot(path=str(QA_SHOTS / "child-mobile-375.png"))
+        cpage.click("[data-start=DIAG]"); cpage.wait_for_selector(".opts")
+        assert "dari 40" in cpage.inner_text(".qhead")
+        cpage.click(".opt[data-i='0']"); cpage.click("#grid"); cpage.wait_for_selector("#g-check")
+        cpage.click("#g-check"); cpage.wait_for_selector("#send"); cpage.click("#send")
+        cpage.wait_for_selector("text=Tryout terkumpul")
+        res_txt = cpage.inner_text("main")
+        for subj in ("Kuantitatif", "Pemahaman Bacaan", "Verbal", "IPA", "IPS"):
+            assert subj in res_txt
+        assert not re.search(r"(?m)^(?:Bahasa Indonesia|Matematika)\b", res_txt)
+        cpage.screenshot(path=str(QA_SHOTS / "child-hasil.png"), full_page=True)
+
+        # 3. Stand-in analisis Minggu 22.00 -> Senin anak buka Buku Salah -> Orang tua buka Report Desktop & Mobile 375px
+        req = urllib.request.Request(base + "/api/admin/analysis/standin", data=b"{}",
+                                     headers={"Content-Type": "application/json", "X-Admin-Token": "dev-admin", "X-Sim-Time": "2026-11-08T22:00"}, method="POST")
+        assert json.loads(urllib.request.urlopen(req).read())["diproses"] == 1
+
+        cpage.goto(base + "/child/?sim=2026-11-09T10:05#/buku-salah")
+        cpage.wait_for_selector("text=Buku Salah")
+        cpage.screenshot(path=str(QA_SHOTS / "child-buku-salah.png"), full_page=True)
+
+        page.goto(base + "/parent/?sim=2026-11-09T07:05#/beranda")
+        page.wait_for_selector("text=Laporan Kesiapan Siswa")
+        rep_txt = page.inner_text("main")
+        for subj in ("Kuantitatif", "Pemahaman Bacaan", "Verbal", "IPA", "IPS"):
+            assert subj in rep_txt
+        assert not re.search(r"(?m)^(?:Bahasa Indonesia|Matematika)\b", rep_txt)
+        page.screenshot(path=str(QA_SHOTS / "parent-report.png"), full_page=True)
+
+        pmpage.goto(base + "/parent/?sim=2026-11-09T07:05#/masuk")
+        pmpage.fill("#email", "kanonik@contoh.id"); pmpage.fill("#pin", "246810"); pmpage.click("button[type=submit]")
+        pmpage.wait_for_selector("text=Laporan Kesiapan Siswa")
+        overflow_parent = pmpage.evaluate("document.documentElement.scrollWidth - window.innerWidth")
+        assert overflow_parent <= 2, f"Parent mobile report overflow: {overflow_parent}"
+        pmpage.screenshot(path=str(QA_SHOTS / "parent-mobile-375.png"))
+        pmpage.click("#tab-buku-salah"); pmpage.wait_for_selector("text=Buku Salah Cetak")
+        pmpage.click("#tab-prestasi"); pmpage.wait_for_selector("text=Jalur Prestasi")
+        assert not errs and not cerrs and not perrs, (errs, cerrs, perrs)
+    finally:
+        for p in (pmpage, cpage, page):
+            if p: p.close()
+        s.shutdown(); s.server_close()
+        bank.configure(None)
