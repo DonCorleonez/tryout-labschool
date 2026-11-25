@@ -62,10 +62,10 @@ Semua test berikut dijalankan setelah perbaikan QA Gate:
 
 | Suite | Perintah | Hasil | Target Minimum |
 |---|---|---|---|
-| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **184/184 lulus** | 171/171 |
+| **Reference Tests (Total Pytest)** | `cd reference && python -m pytest -q` | **186/186 lulus** | 171/171 |
 | **Real-HTTP Integration** | `cd reference && python -m pytest test_server.py -q` | **22/22 lulus** | 22/22 |
 | **Pen-Test & Anti-Clone** | `cd reference && python -m pytest test_pentest.py -q` | **21/21 lulus** | 21/21 |
-| **Playwright E2E & Click-Checks** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **8/8 lulus** (termasuk dalam 184; mencakup bank kanonik 5 mapel & mobile 375px semua portal) | 6/6 + human click-checks |
+| **Playwright E2E (Otomatis Chromium)** | `cd reference && python -m pytest test_e2e_child.py test_e2e_parent.py -v` | **9/9 lulus** (termasuk dalam 186; uji otomatis alur utama & overflow 375px, **belum menggantikan** human click-check penuh di perangkat fisik) | 6/6 + human click-check |
 | **Simulasi Musim & Persona** | `cd reference && python sim_check.py` | **3345/3345 checks OK** | 1991/1992 |
 | **Frontend JS Runner** | `node frontend/runner.test.js` | **6/6 lulus** | 6/6 |
 | **JS Syntax Check** | `node --check public/js/*.js public/child/child.js public/parent/parent.js` | **5/5 lulus (0 galat)** | — |
@@ -88,7 +88,7 @@ Semua test berikut dijalankan setelah perbaikan QA Gate:
 
 1. **Dual-kompatibilitas kode akses (`child_code` 9-char + `access_code` `LAB-XXXX-XXXX`):** Endpoint `/api/child/login` menerima kedua format dengan menormalkan prefix `LAB-`, sehingga memenuhi spesifikasi Section 4 sekaligus menjaga test existing `len(child_code) == 9` tetap hijau tanpa regresi.
 2. **Pelacakan batas 3 perangkat (G-20) berdasarkan `X-Device-Id` / `User-Agent`:** Permintaan tanpa header perangkat dikelompokkan sebagai `"default"` agar test unit tanpa header tidak terblokir, sementara perangkat berbeda (`User-Agent` / `X-Device-Id` berbeda) dibatasi ketat maksimal 3 per `(family_id, role)` dengan HTTP `403 device_limit_tercapai`.
-3. **Pemasangan Python 3.12 + Playwright lokal untuk verifikasi nyata:** Mesin Windows lokal awalnya hanya memiliki stub Microsoft Store Python; instalasi Python 3.12.10 + Playwright Chromium memungkinkan eksekusi nyata seluruh 176 test dan verifikasi screenshot desktop + mobile 375px.
+3. **Pemasangan Python 3.12 + Playwright lokal untuk verifikasi nyata:** Mesin Windows lokal awalnya hanya memiliki stub Microsoft Store Python; instalasi Python 3.12.10 + Playwright Chromium memungkinkan eksekusi nyata seluruh **186** tes (`177` unit/HTTP/pentest/bank + `9` E2E browser) dan verifikasi screenshot desktop + mobile 375px. Note operasional: folder `BANK_DIR` produksi wajib hanya berisi bank kanonik tervalidasi (`batch_01.json` dsb.); fixture mentah tidak dimasukkan ke `BANK_DIR` siswa.
 4. **Pengurasan body terbatas pada error HTTP 413 di `server.py`:** Menutup koneksi langsung tanpa membaca buffer pada Windows TCP stack memicu `WinError 10053`; membaca body <= `2 * MAX_BODY` sebelum menutup koneksi menghilangkan race tersebut tanpa membuka risiko DoS untuk payload raksasa.
 5. **Penyimpanan gamifikasi terpisah di tabel `child_xp_events` dan isolasi total di `/api/parent/*`:** Memastikan XP, bintang, streak, dan level tidak pernah terekspos ke laporan orang tua sesuai larangan Section 5.
 
@@ -144,14 +144,14 @@ Tangkapan layar berikut dihasilkan langsung dari test Playwright E2E di Chromium
 ## 8. Instruksi Menjalankan Ulang Seluruh Test (untuk Claude QA Gate)
 
 ```bash
-# 1. Reference tests + Real-HTTP (22) + Pen-test (21) + Playwright E2E (7) = 177 tests
+# 1. Reference tests + Real-HTTP (22) + Pen-test (21) + Playwright E2E (9) = 186 tests
 cd reference
 QUIET_LOG=1 python -m pytest -q
 
 # 2. Verifikasi suite terpisah per kategori
 QUIET_LOG=1 python -m pytest test_server.py -q     # 22/22 real-HTTP
 QUIET_LOG=1 python -m pytest test_pentest.py -q    # 21/21 pen-test
-QUIET_LOG=1 python -m pytest test_e2e_child.py test_e2e_parent.py -v  # 7/7 Playwright E2E
+QUIET_LOG=1 python -m pytest test_e2e_child.py test_e2e_parent.py -v  # 9/9 Playwright E2E (uji otomatis; human click-check dilakukan terpisah)
 
 # 3. Simulasi penuh musim & persona (3345 checks)
 python sim_check.py

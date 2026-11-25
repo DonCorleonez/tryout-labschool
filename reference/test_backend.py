@@ -531,3 +531,17 @@ def test_g20_parent_register_and_relogin_same_device_counts_as_one_slot(app):
     # Perangkat ke-4 ditolak
     st4, e4 = call(app, "POST", "/api/parent/login", {"email": "p-dev@b.co", "pin": "123456"}, headers={"User-Agent": same_ua, "X-Device-Id": "dev_p4"})
     assert st4 == 403 and e4["error"] == "device_limit_tercapai"
+
+
+def test_cutoff_determined_by_order_time_register_8_dec_order_9_dec(app):
+    st, r = call(app, "POST", "/api/parent/register",
+                 {"name": "Ibu Lintas Cutoff", "whatsapp": "081234567895", "email": "cutoff@b.co", "campus": "Cibubur", "track": "Tes", "grade": "6", "consent": True, "pin": "123456"},
+                 t="2026-12-08T20:00")
+    assert st == 200
+    st_h1, h1 = call(app, "GET", "/api/parent/home", token=r["token"], t="2026-12-08T20:05")
+    assert st_h1 == 200 and h1["offer"]["plan"] == "utama" and h1["offer"]["amount_idr"] == 99_000
+    # Melewati 9 Des 00.00 WIB saat order: tawaran & pesanan memakai tarif Kejar
+    st_h2, h2 = call(app, "GET", "/api/parent/home", token=r["token"], t="2026-12-09T00:00")
+    assert st_h2 == 200 and h2["offer"]["plan"] == "kejar" and h2["offer"]["amount_idr"] == 129_000 and h2["offer"]["tryouts"] == 9
+    st_o, o = call(app, "POST", "/api/parent/orders", {}, token=r["token"], t="2026-12-09T00:00")
+    assert st_o == 200 and o["plan"] == "kejar" and o["amount_idr"] == 129_000
