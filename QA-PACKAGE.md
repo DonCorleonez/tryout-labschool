@@ -52,7 +52,7 @@ Sebelum menulis kode baru, kondisi repo `DonCorleonez/tryout-labschool` (`main` 
 - `reference/import_batch.py`: Smoke importer yang menjalankan renumbering lalu validasi penuh lewat `bankfile.Bank.load`.
 - `reference/bankfile.py`, `reference/bank.py`: Dukungan loader `*.json` (`batch_*.json`), penolakan otomatis kata `"Labschool"` di soal/bacaan, dan `build_drill` / `get_drill_questions` sesuai topik.
 - `reference/testdata/batch_01.json`: **56 soal non-Math** orisinal Kurikulum Merdeka Fase C (4 bacaan 120–250 kata, 14 Pemahaman Bacaan, 14 Verbal, 16 IPA, 12 IPS; sebaran kunci 25% A/B/C/D) + **46 template Math** deterministik mencakup 13 topik `MAT-*` (lolos 1.000 seed, 0 ditolak, 0 peringatan).
-- `reference/testdata/batch_01_chatgpt_raw.json`: Salinan file asli ChatGPT 56 soal non-Math (`bi-kb-01`..`vb-si-06`). Setelah perbaikan validator tanda baca (`VER-BKU`) di `reference/bankfile.py` serta normalizer wacana singkat (`VER-LOG`) dan penyeimbang kunci (`25%` A/B/C/D) di `reference/renumber_bank.py`, `python import_batch.py testdata/batch_01_chatgpt_raw.json` lolos bersih **56/56 butir, 0 ditolak, 0 peringatan**.
+- `reference/testdata/batch_01_chatgpt_raw.json`: Salinan file asli ChatGPT 56 soal non-Math (`bi-kb-01`..`vb-si-06`). Setelah perbaikan validator tanda baca (`VER-BKU`) di `reference/bankfile.py` serta penyeimbang kunci (`25%` A/B/C/D) di `reference/renumber_bank.py`, `python import_batch.py testdata/batch_01_chatgpt_raw.json` mempertahankan klasifikasi asli mata uji (**56/56 lolos, 0 ditolak, 4 bacaan: `Pemahaman Bacaan 4`, `Verbal 20`, `IPA 20`, `IPS 12`**) serta menandai 4 bacaan pendek `< 120` kata (`BAC-P-C001..004`) dengan peringatan panjang bacaan + flag `needs_passage_revision` untuk ekspansi wacana tanpa memindahkan mata uji.
 
 ---
 
@@ -70,7 +70,7 @@ Semua test berikut dijalankan setelah perbaikan QA Gate:
 | **Frontend JS Runner** | `node frontend/runner.test.js` | **6/6 lulus** | 6/6 |
 | **JS Syntax Check** | `node --check public/js/*.js public/child/child.js public/parent/parent.js` | **5/5 lulus (0 galat)** | — |
 | **Smoke Import `batch_01.json`** | `cd reference && python import_batch.py testdata/batch_01.json` | **56 non-Math + 46 Math templates lolos (0 ditolak, 0 peringatan)** | — |
-| **Smoke Import `batch_01_chatgpt_raw.json`** | `cd reference && python import_batch.py testdata/batch_01_chatgpt_raw.json` | **56/56 lolos (0 ditolak, 0 peringatan)** | — |
+| **Smoke Import `batch_01_chatgpt_raw.json`** | `cd reference && python import_batch.py testdata/batch_01_chatgpt_raw.json` | **56/56 lolos (0 ditolak, 4 bacaan `BAC-P-C001..004` ditandai revisi panjang < 120 kata)** | — |
 
 ---
 

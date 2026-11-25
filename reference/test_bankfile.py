@@ -140,8 +140,22 @@ def test_batch_01_builds_full_format_tryout_and_drills():
     assert len(dr) == 5 and all(q["topic"] == "Pecahan" for q in dr)
 
 
-def test_chatgpt_raw_batch_01_renumbers_and_validates():
+def test_chatgpt_raw_batch_01_renumbers_and_validates(tmp_path):
+    from collections import Counter
     import import_batch as ib
-    res = ib.import_batch(HERE / "testdata" / "batch_01_chatgpt_raw.json")
+    import renumber_bank as rb
+    raw_src = HERE / "testdata" / "batch_01_chatgpt_raw.json"
+    res = ib.import_batch(raw_src)
     assert res["renumbered"] == 56
-    assert res["items_loaded"] == 56 and res["rejected_count"] == 0 and res["warnings"] == []
+    assert res["items_loaded"] == 56 and res["passages_loaded"] == 4 and res["rejected_count"] == 0
+    assert len(res["warnings"]) == 4
+    assert all("BAC-P-C00" in w and "target 120-250" in w for w in res["warnings"])
+
+    staged = tmp_path / "staged.json"
+    rb.renumber_batch_file(raw_src, staged)
+    b = bf.Bank.load(tmp_path)
+    subj_counts = Counter(x["subject"] for x in b.items.values())
+    topic_counts = Counter(x["topic"] for x in b.items.values())
+    assert subj_counts == {"Pemahaman Bacaan": 4, "Verbal": 20, "IPA": 20, "IPS": 12}
+    assert topic_counts["BAC-GAG"] == 4
+    assert all(p.get("needs_passage_revision") is True for p in b.passages.values())

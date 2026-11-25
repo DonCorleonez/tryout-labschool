@@ -52,23 +52,22 @@ def normalize_chatgpt_items(raw_items: list[dict]) -> tuple[list[dict], list[dic
         stem = str(src.get("q", "")).strip()
         pid = str(src.get("passage_id") or "").strip() or None
         subtopic_txt = topic_raw[:60] if len(topic_raw) >= 3 else f"Topik {code}"
+        extra_note = ""
         if code.startswith("BAC-") and not pid:
-            # Wacana singkat inline (< 120 kata) tanpa bacaan panjang eksternal -> Logika Verbal (Wacana)
+            p_seq += 1
+            pid = f"BAC-P-C{p_seq:03d}"
             marker = "Gagasan utama"
-            para_part = stem.split(marker, 1)[0].strip() if marker in stem else stem
-            if len(para_part.split()) >= 120:
-                p_seq += 1
-                pid = f"BAC-P-C{p_seq:03d}"
-                if marker in stem:
-                    para, qpart = stem.split(marker, 1)
-                    stem = (marker + qpart).strip()
-                    passages.append({"passage_id": pid, "topic": code, "text": para.strip() or stem})
-                else:
-                    passages.append({"passage_id": pid, "topic": code, "text": stem})
+            if marker in stem:
+                para, qpart = stem.split(marker, 1)
+                p_text = para.strip() or stem
+                stem = (marker + qpart).strip()
             else:
-                subj = "Verbal"
-                code = "VER-LOG"
-                subtopic_txt = "Gagasan Utama Wacana"
+                p_text = stem
+            p_obj = {"passage_id": pid, "topic": code, "text": p_text}
+            if len(p_text.split()) < 120:
+                p_obj["needs_passage_revision"] = True
+                extra_note = ";needs_passage_revision(<120w)"
+            passages.append(p_obj)
         opts = list(src.get("opts", []))
         ans = int(src.get("ans", 0))
         if len(opts) == 4 and 0 <= ans < 4:
@@ -100,7 +99,7 @@ def normalize_chatgpt_items(raw_items: list[dict]) -> tuple[list[dict], list[dic
             "est_seconds": {1: 45, 2: 75, 3: 105}.get(lvl, 60),
             "image": None,
             "ambiguous": False,
-            "notes": f"orig_id:{src.get('id', '')}",
+            "notes": f"orig_id:{src.get('id', '')}{extra_note}",
         })
     return out, passages
 
